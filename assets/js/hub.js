@@ -153,7 +153,7 @@ function explore(L) {
     ['postseason', 'Postseason', 'Bracket, series and path odds', true], ['hitters', 'Hitters', 'Percentiles over the full catalogue', false],
     ['pitchers', 'Pitchers', 'Stuff, location, arsenals', false], ['leaders', 'Leaders', 'Any metric, any minimum', false],
     ['umpires', 'Umpires', 'Accuracy, scorecards, ABS', true], ['parks', 'Parks', 'Our park factors and weather', true],
-    ['prospects', 'Prospects', 'Triple-A translations', true], ['history', 'History', 'All-time, era-adjusted, from 1901', true],
+    ['prospects', 'Prospects', 'Triple-A translations', true], ['history', 'History', 'All-time, era-adjusted, from 1908', true],
     ['lab', 'Lab', 'Scatter any two metrics', false], ['calibration', 'Calibration', 'Against the closing lines', true]
   ];
   return '<div class="hub-links pad">' + links.map(l => '<a href="' + (l[3] ? BP.ghref(l[0]) : BP.href(l[0], L)) + '"><b>' + esc(l[1]) + '</b><span>' + esc(l[2]) + '</span></a>').join('') +
@@ -161,7 +161,9 @@ function explore(L) {
     '<a href="' + BP.FOOTBALL_URL + '"><b>⚽ The Quant Footballer</b><span>The sister site for football</span></a>' +
     '<a href="' + BP.PADDOCK_URL + '"><b>🏁 The Quant Paddock</b><span>The sister site for Formula 1</span></a>' +
     '<a href="' + BP.HARDWOOD_URL + '"><b>🏀 The Quant Hardwood</b><span>The sister site for the NBA and WNBA</span></a>' +
-    '<a href="' + BP.ACE_URL + '"><b>🎾 The Quant Ace</b><span>The sister site for ATP and WTA tennis</span></a></div>';
+    '<a href="' + BP.ACE_URL + '"><b>🎾 The Quant Ace</b><span>The sister site for ATP and WTA tennis</span></a>' +
+    '<a href="' + BP.GRIDIRON_URL + '"><b>🏈 The Quant Gridiron</b><span>The sister site for the NFL</span></a>' +
+    '<a href="' + BP.RINK_URL + '"><b>🏒 The Quant Rink</b><span>The sister site for the NHL</span></a></div>';
 }
 
 const PHASE = { preseason: 'Preseason', regular: 'Regular season', postseason: 'Postseason', offseason: 'Off-season', complete: 'Season complete' };

@@ -1,7 +1,8 @@
-/* The Quant Bullpen — history (#/history): all-time leaderboards from 1901, era-adjusted.
+/* The Quant Bullpen — history (#/history): all-time leaderboards from 1908, era-adjusted.
  *
- * Player seasons come from Retrosheet play-by-play (1908 on; 1901–1907 have box scores only)
- * and, after the last Retrosheet year, from Statcast; each season is valued by that season's own
+ * Player seasons come from Retrosheet play-by-play (event files from 1908; Retrosheet's 1901–1907
+ * box-score files are not read, so there are no player seasons before 1908; the first season shown is
+ * history.json's `first`) and, after the last Retrosheet year, from Statcast; each season is valued by that season's own
  * linear weights, so a run in 1968 and a run in 2000 are each measured against their league.
  * wRC+ = 100 · (wRAA/PA + lgR/PA) / (lgR/PA) and RA9− = 100 · RA9 / lgRA9 (models/history.py);
  * neither is park-adjusted. Careers are recomputed from summed components.
@@ -14,7 +15,8 @@
 
 const K = () => BP.gk;
 const RETRO = 'The information used here was obtained free of charge from and is copyrighted by Retrosheet. Interested parties may contact Retrosheet at "www.retrosheet.org".';
-const ST = { scope: '', metric: '', from: 1901, to: 2100, q: '' };
+let FIRST = 1908;       // the first season with player history (history.json `first`; Retrosheet event files start in 1908)
+const ST = { scope: '', metric: '', from: FIRST, to: 2100, q: '' };
 const MLABEL = { k: 'Strikeouts', wrc_plus: 'wRC+', ra9_minus: 'RA9−', war: 'WAR', bwar: 'Bullpen WAR', batting_runs: 'Batting runs', lw_runs: 'Linear-weights runs', hr: 'Home runs', h: 'Hits', sb: 'Stolen bases', so: 'Strikeouts', k: 'Strikeouts', ip: 'Innings', w: 'Wins', sv: 'Saves', woba: 'wOBA', pa: 'Plate appearances', rbi: 'RBI', r: 'Runs', bb: 'Walks', era: 'ERA', fip: 'FIP', runs_above_avg: 'Runs above average', wraa: 'wRAA' };
 const LOWER = /ra9_minus|^era$|^fip$|minus/;
 
@@ -60,16 +62,22 @@ function seasonEnd(s) { const m = /(\d{4})\D+(\d{2,4})\s*$/.exec(String(s || '')
 
 function render(el, params) {
   const k = K();
-  el.innerHTML = '<div class="card"><div class="card-header">All-time leaders, 1901 to now <span class="card-sub" id="hi-sub">Loading…</span></div>' +
+  el.innerHTML = '<div class="card"><div class="card-header">All-time leaders, <span id="hi-first">' + FIRST + '</span> to now <span class="card-sub" id="hi-sub">Loading…</span></div>' +
     '<div class="lab-controls gq-controls"><label>Board<select id="hi-scope"></select></label><label>Metric<select id="hi-metric" class="gq-wide"></select></label>' +
-    '<label>From <input id="hi-from" type="number" min="1901" max="2100" step="1" style="width:76px"></label><label>To <input id="hi-to" type="number" min="1901" max="2100" step="1" style="width:76px"></label>' +
-    '<label>Era' + k.select('hi-era', [['', 'Any'], ['1901-1919', 'Dead ball (1901–19)'], ['1920-1941', 'Live ball (1920–41)'], ['1942-1960', 'Integration (1942–60)'], ['1961-1976', 'Expansion (1961–76)'], ['1977-1993', 'Free agency (1977–93)'], ['1994-2005', 'High offence (1994–2005)'], ['2006-2014', 'Post-testing (2006–14)'], ['2015-2100', 'Statcast (2015–)']], '') + '</label>' +
+    '<label>From <input id="hi-from" type="number" min="' + FIRST + '" max="2100" step="1" style="width:76px"></label><label>To <input id="hi-to" type="number" min="' + FIRST + '" max="2100" step="1" style="width:76px"></label>' +
+    '<label>Era' + k.select('hi-era', [['', 'Any'], ['1908-1919', 'Dead ball (1908–19)'], ['1920-1941', 'Live ball (1920–41)'], ['1942-1960', 'Integration (1942–60)'], ['1961-1976', 'Expansion (1961–76)'], ['1977-1993', 'Free agency (1977–93)'], ['1994-2005', 'High offence (1994–2005)'], ['2006-2014', 'Post-testing (2006–14)'], ['2015-2100', 'Statcast (2015–)']], '') + '</label>' +
     '<label>Highlight<input id="hi-q" class="gq-search" type="search" placeholder="player…"></label></div>' +
     '<div id="hi-chart" style="height:380px"></div><div id="hi-table"></div><div class="pg-note gq-note" id="hi-note"></div><div class="gq-retro">' + k.esc(BP.RETRO_NOTICE || RETRO) + '</div></div>' +
     '<div class="card"><div class="card-header">League by year <span class="card-sub">The run environment each season is measured against: league runs per nine innings, strikeout and home-run rates.</span></div><div id="hi-env" style="height:300px"></div></div>';
   return k.ready().then(() => BP.load(k.L(params, BP.state) + '/history.json')).then(d => (k.ok(d) ? d : BP.load('mlb/history.json').then(d2 => d2 || d))).then(d => {
     if (!k.alive(el)) return;
     const $ = id => document.getElementById(id);
+    if (d && k.isNum(d.first) && Number(d.first) !== FIRST) {
+      if (ST.from === FIRST) ST.from = Number(d.first);
+      FIRST = Number(d.first);
+      if ($('hi-first')) $('hi-first').textContent = FIRST;
+      ['hi-from', 'hi-to'].forEach(x => { if ($(x)) $(x).min = FIRST; });
+    }
     const B = boardsOf(d);
     const scopes = Object.keys(B);
     if (!scopes.length) { $('hi-table').innerHTML = k.notBuilt('The all-time leaderboards', d); $('hi-sub').textContent = ''; $('hi-chart').style.display = 'none'; envChart(null); return; }
@@ -104,7 +112,7 @@ function render(el, params) {
           .concat(ex.map(x => ({ v: r.raw[x[0]], html: fmtM(x[0], r.raw[x[0]], {}) }))).concat([{ v: r.v, html: '<strong>' + fmtM(ST.metric, r.v, meta) + '</strong>' }]) })), { compact: true, sticky: true })
         : k.muted('Nobody in this window. Widen the years.');
       k.sortable($('hi-table'));
-      $('hi-sub').textContent = rows.length + ' on the board · ' + (SL[ST.scope] || ST.scope) + ' · ' + lbl + (ST.from > 1901 || ST.to < 2100 ? ' · ' + ST.from + '–' + Math.min(ST.to, new Date().getFullYear()) : '');
+      $('hi-sub').textContent = rows.length + ' on the board · ' + (SL[ST.scope] || ST.scope) + ' · ' + lbl + (ST.from > FIRST || ST.to < 2100 ? ' · ' + ST.from + '–' + Math.min(ST.to, new Date().getFullYear()) : '');
       const top = rows.slice(0, 25);
       const node = $('hi-chart');
       if (top.length && top.some(r => seasonNum(r.season))) {
@@ -114,14 +122,14 @@ function render(el, params) {
           marker: { size: all.map((r, i) => (i < 10 ? 11 : 6)), color: all.map((r, i) => (hits.indexOf(r) >= 0 ? '#ffffff' : i < 10 ? '#f97316' : 'rgba(88,166,255,0.55)')), line: { color: '#0d1117', width: 0.5 } } }],
         k.layout({ margin: { l: 50, r: 10, t: 10, b: 40 }, xaxis: { title: ST.scope === 'career' ? 'Middle of the career' : 'Season' }, yaxis: { title: lbl, autorange: lower ? 'reversed' : true } }));
       } else node.style.display = 'none';
-      $('hi-note').innerHTML = 'Era-adjusted metrics compare each season with its own league: wRC+ and RA9− (100 = league average; RA9− lower is better) use that season\'s runs per plate appearance and runs per nine, and neither is park-adjusted. Rate boards need 3,000 PA (wRC+) or 1,500 innings (RA9−). WAR before 2015 is Bullpen WAR\'s historical version: Retrosheet linear-weights batting and baserunning, a range-factor fielding proxy from Lahman putouts, assists and errors (it overrates some dead-ball-era fielders), positional adjustments and RA9-based pitching; it is rougher than the Statcast-era figure, whose batting is regressed expected value rather than results. Retrosheet play-by-play starts in 1908, so 1901–1907 seasons carry box-score totals only. Click a modern player for his page.';
+      $('hi-note').innerHTML = 'Era-adjusted metrics compare each season with its own league: wRC+ and RA9− (100 = league average; RA9− lower is better) use that season\'s runs per plate appearance and runs per nine, and neither is park-adjusted. Rate boards need 3,000 PA (wRC+) or 1,500 innings (RA9−). WAR before 2015 is Bullpen WAR\'s historical version: Retrosheet linear-weights batting and baserunning, a range-factor fielding proxy from Lahman putouts, assists and errors (it overrates some dead-ball-era fielders), positional adjustments and RA9-based pitching; it is rougher than the Statcast-era figure, whose batting is regressed expected value rather than results. Player history starts in 1908, the first season of Retrosheet play-by-play (its 1901–1907 box-score files are not read). Click a modern player for his page.';
     };
     $('hi-scope').onchange = e => { ST.scope = e.target.value; syncM(); draw(); };
     $('hi-metric').onchange = e => { ST.metric = e.target.value; draw(); };
     $('hi-from').value = ST.from; $('hi-to').value = Math.min(ST.to, new Date().getFullYear());
-    $('hi-from').onchange = e => { ST.from = Number(e.target.value) || 1901; $('hi-era').value = ''; draw(); };
+    $('hi-from').onchange = e => { ST.from = Number(e.target.value) || FIRST; $('hi-era').value = ''; draw(); };
     $('hi-to').onchange = e => { ST.to = Number(e.target.value) || 2100; $('hi-era').value = ''; draw(); };
-    $('hi-era').onchange = e => { const v = e.target.value; if (v) { const p = v.split('-'); ST.from = Number(p[0]); ST.to = Number(p[1]); } else { ST.from = 1901; ST.to = 2100; } $('hi-from').value = ST.from; $('hi-to').value = Math.min(ST.to, new Date().getFullYear()); draw(); };
+    $('hi-era').onchange = e => { const v = e.target.value; if (v) { const p = v.split('-'); ST.from = Number(p[0]); ST.to = Number(p[1]); } else { ST.from = FIRST; ST.to = 2100; } $('hi-from').value = ST.from; $('hi-to').value = Math.min(ST.to, new Date().getFullYear()); draw(); };
     let t = null;
     $('hi-q').oninput = e => { ST.q = e.target.value; clearTimeout(t); t = setTimeout(draw, 200); };
     syncM();

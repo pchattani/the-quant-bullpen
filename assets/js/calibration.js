@@ -84,13 +84,21 @@ function reading(d) {
   }
   const st = C.stuff || {};
   if (st.available) out.push('<p><strong>Stuff validity.</strong> For ' + k.int(st.n) + ' pitchers with 300+ batters faced in consecutive seasons, this season\'s ' + (st.score === 'stuff' ? 'Stuff+' : 'fastball velocity (Stuff+ was not available)') + ' correlates ' + k.num(st.stuff_vs_next_k, 3) + ' with next season\'s strikeout rate (this season\'s strikeout rate: ' + k.num(st.k_vs_next_k, 3) + ') and ' + k.num(st.stuff_vs_next_ra9, 3) + ' with next season\'s RA9 (strikeout rate: ' + k.num(st.k_vs_next_ra9, 3) + '). ' +
-    (Math.abs(st.stuff_vs_next_k) > Math.abs(st.k_vs_next_k) ? 'Stuff alone predicts strikeouts better than past strikeouts do.' : 'Past strikeouts still predict strikeouts better than stuff alone, as expected: results carry location, sequencing and deception too.') + '</p>');
+    (Math.abs(st.stuff_vs_next_k) > Math.abs(st.k_vs_next_k) ? 'Stuff alone predicts strikeouts better than past strikeouts do.' : 'Past strikeouts still predict strikeouts better than stuff alone, as expected: results carry location, sequencing and deception too.') +
+    (k.isNum(st.stuff_vs_next_ra9) && k.isNum(st.k_vs_next_ra9) ? (Math.abs(Math.abs(st.stuff_vs_next_ra9) - Math.abs(st.k_vs_next_ra9)) < 0.02 ? ' For runs allowed the two are level.' : ' For runs allowed ' + (Math.abs(st.stuff_vs_next_ra9) > Math.abs(st.k_vs_next_ra9) ? 'stuff' : 'past strikeouts') + ' predict better.') : '') + '</p>');
   const pj = (C.projections || {}).pooled;
   if (pj && (pj.hitter || pj.pitcher)) {
     const g = (role, c) => ((pj[role] || {})[c] || {}).gain_pct;
     out.push('<p><strong>Projections.</strong> Against a Marcel-style baseline (5/4/3 season weights, 1,200 PA of league average, a simple age factor), next-season projections cut the weighted error of hitters\' wOBA by ' + k.num(g('hitter', 'wOBA'), 1) + '% and strikeout rate by ' + k.num(g('hitter', 'K'), 1) + '%' +
       (k.isNum(g('pitcher', 'K')) ? ', and pitchers\' strikeout rate by ' + k.num(g('pitcher', 'K'), 1) + '% and wOBA allowed by ' + k.num(g('pitcher', 'wOBA'), 1) + '%' : '') + ' (negative means worse than the baseline).</p>');
   }
+  ['framing', 'oaa'].forEach(x => {
+    const ps = bySeason(d[x] || C[x], x);
+    if (!ps.length) return;
+    const lo = ps.reduce((a, b) => (b.r < a.r ? b : a)), hi = ps.reduce((a, b) => (b.r > a.r ? b : a));
+    out.push('<p><strong>' + (x === 'oaa' ? 'Fielding runs against Savant\'s OAA' : 'Framing runs against Savant\'s framing runs') + '.</strong> ' + (ps.length === 1 ? 'Correlation ' + k.num(lo.r, 3) + ' in ' + lo.season : 'Season by season the correlation ranges from ' + k.num(lo.r, 3) + ' (' + lo.season + ') to ' + k.num(hi.r, 3) + ' (' + hi.season + ') over ' + ps.length + ' seasons') +
+      (x === 'oaa' ? ', fielders with ' + (ps[0].floor || 50) + '+ chances' : ', catchers with ' + k.int(ps[0].floor || 1000) + '+ called pitches') + '.</p>');
+  });
   ['framing', 'oaa'].forEach(x => { const v = d[x] || C[x]; if (v && k.isNum(v.r || v.pearson)) out.push('<p><strong>' + (x === 'oaa' ? 'Fielding runs against Savant\'s OAA' : 'Framing runs against Savant\'s framing') + '.</strong> Correlation ' + k.num(v.r || v.pearson, 3) + ' over ' + k.int(v.n) + (x === 'oaa' ? ' fielders with 50+ chances' : ' catchers with 1,000+ called pitches') + (k.isNum(v.slope) ? '; slope ' + k.num(v.slope, 2) : '') + '.</p>'); });
   return out.join('') || '<p>Not enough scored games for a reading yet.</p>';
 }
@@ -191,9 +199,26 @@ function proj(p) {
       { v: r[2].ours, html: k.num(r[2].ours, 4) }, { v: r[2].marcel, html: k.num(r[2].marcel, 4) }, { v: r[2].gain_pct, html: '<span class="' + (r[2].gain_pct > 0 ? 'gq-ok' : 'gq-no') + '">' + k.signed(r[2].gain_pct, 1) + '%</span>' }]), { compact: true }) +
     '<div class="pg-note gq-note">RMSE weighted by the actual sample, players with 200+ PA or BF in the projected season. Seasons: ' + Object.keys(((p.seasons || {}).hitter) || {}).join(', ') + '.</div>';
 }
+/* checks.framing / checks.oaa as built: {season: {ok, n, r_runs, r_rate | r_oaa, min_called | min_chances}} ->
+ * [{season, n, r (season runs v Savant's), r2 (rate or OAA), floor}], seasons ascending; [] for any other shape. */
+function bySeason(v, x) {
+  const k = K();
+  if (!v || typeof v !== 'object' || k.isNum(v.r) || k.isNum(v.pearson)) return [];
+  return Object.keys(v).filter(s => /^\d{4}$/.test(s) && v[s] && v[s].ok !== false && k.isNum(v[s].r_runs)).sort()
+    .map(s => ({ season: s, n: v[s].n, r: v[s].r_runs, r2: x === 'oaa' ? v[s].r_oaa : v[s].r_rate, floor: v[s].min_called || v[s].min_chances }));
+}
 function ext(d) {
   const k = K(), host = document.getElementById('cal-ext');
   const C = d.checks || {};
+  const ps = [['framing', 'Framing runs v Savant', 'catchers', 'rate v rate'], ['oaa', 'Fielding runs v Savant OAA', 'fielders', 'OAA v OAA']]
+    .map(x => [x, bySeason(d[x[0]] || C[x[0]], x[0])]).filter(x => x[1].length);
+  if (ps.length) {
+    host.innerHTML = k.table([{ label: 'Check' }, { label: 'Season' }, { label: 'n', align: 'right' }, { label: 'r (runs)', align: 'right' }, { label: 'r (other)', align: 'right' }],
+      [].concat.apply([], ps.map(x => x[1].map(r => [{ v: x[0][1], html: '<strong>' + k.esc(x[0][1]) + '</strong>' }, { v: r.season, html: k.esc(r.season) }, { v: r.n, html: k.int(r.n) + ' ' + x[0][2] },
+        { v: r.r, html: k.num(r.r, 3) }, { v: r.r2, html: k.isNum(r.r2) ? k.num(r.r2, 3) + ' <span class="muted-inline">' + x[0][3] + '</span>' : '—' }]))), { compact: true }) +
+      '<div class="pg-note gq-note">Pearson correlations with Savant\'s leaderboards by season: framing for catchers with 1,000+ called pitches, fielding for fielders with 50+ chances. The current season is partial.</div>';
+    return;
+  }
   const items = [['framing', 'Framing runs v Savant framing', 'catchers'], ['oaa', 'Fielding runs v Savant OAA', 'fielders'], ['savant_framing', 'Framing v Savant', 'catchers'], ['catchprob', 'Catch probability v Savant OAA', 'fielders']];
   const rows = items.map(x => [x, d[x[0]] || C[x[0]]]).filter(x => x[1] && (k.isNum(x[1].r) || k.isNum(x[1].pearson) || k.isNum(x[1].spearman)));
   host.innerHTML = rows.length ? k.table([{ label: 'Check' }, { label: 'n', align: 'right' }, { label: 'Pearson r', align: 'right' }, { label: 'Spearman', align: 'right' }, { label: 'Slope', align: 'right' }, { label: 'RMSE', align: 'right' }],
