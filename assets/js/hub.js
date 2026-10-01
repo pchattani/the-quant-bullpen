@@ -161,9 +161,7 @@ function explore(L) {
     '<a href="' + BP.FOOTBALL_URL + '"><b>⚽ The Quant Footballer</b><span>The sister site for football</span></a>' +
     '<a href="' + BP.PADDOCK_URL + '"><b>🏁 The Quant Paddock</b><span>The sister site for Formula 1</span></a>' +
     '<a href="' + BP.HARDWOOD_URL + '"><b>🏀 The Quant Hardwood</b><span>The sister site for the NBA and WNBA</span></a>' +
-    '<a href="' + BP.ACE_URL + '"><b>🎾 The Quant Ace</b><span>The sister site for ATP and WTA tennis</span></a>' +
-    '<a href="' + BP.GRIDIRON_URL + '"><b>🏈 The Quant Gridiron</b><span>The sister site for the NFL</span></a>' +
-    '<a href="' + BP.RINK_URL + '"><b>🏒 The Quant Rink</b><span>The sister site for the NHL</span></a></div>';
+    '<a href="' + BP.ACE_URL + '"><b>🎾 The Quant Ace</b><span>The sister site for ATP and WTA tennis</span></a></div>';
 }
 
 const PHASE = { preseason: 'Preseason', regular: 'Regular season', postseason: 'Postseason', offseason: 'Off-season', complete: 'Season complete' };

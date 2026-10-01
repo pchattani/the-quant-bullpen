@@ -62,8 +62,6 @@ const FOOTBALL_URL = 'https://pchattani.github.io/the-quant-footballer/';
 const PADDOCK_URL = 'https://pchattani.github.io/the-quant-paddock/';
 const HARDWOOD_URL = 'https://pchattani.github.io/the-quant-hardwood/';
 const ACE_URL = 'https://pchattani.github.io/the-quant-ace/';
-const GRIDIRON_URL = 'https://pchattani.github.io/the-quant-gridiron/';
-const RINK_URL = 'https://pchattani.github.io/the-quant-rink/';
 const SITE = 'The Quant Bullpen';
 const LEVELS = ['mlb', 'aaa'];
 const LEVEL_NAME = { mlb: 'MLB', aaa: 'AAA' };
@@ -1288,7 +1286,7 @@ return {
   toggles: toggles, wireToggles: wireToggles, pageHead: pageHead,
   // charts
   plot: plot, layout: layout, PALETTE: PALETTE, C: C, DARK_LAYOUT: DARK_LAYOUT, PLOTLY_CONF: PLOTLY_CONF,
-  FOOTBALL_URL: FOOTBALL_URL, PADDOCK_URL: PADDOCK_URL, HARDWOOD_URL: HARDWOOD_URL, ACE_URL: ACE_URL, GRIDIRON_URL: GRIDIRON_URL, RINK_URL: RINK_URL,
+  FOOTBALL_URL: FOOTBALL_URL, PADDOCK_URL: PADDOCK_URL, HARDWOOD_URL: HARDWOOD_URL, ACE_URL: ACE_URL,
   charts: {}
 };
 })();
