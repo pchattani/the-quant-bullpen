@@ -93,7 +93,7 @@ function reading(d) {
       (k.isNum(g('pitcher', 'K')) ? ', and pitchers\' strikeout rate by ' + k.num(g('pitcher', 'K'), 1) + '% and wOBA allowed by ' + k.num(g('pitcher', 'wOBA'), 1) + '%' : '') + ' (negative means worse than the baseline).</p>');
   }
   ['framing', 'oaa'].forEach(x => {
-    const ps = bySeason(d[x] || C[x], x);
+    const ps = bySeason(d[x] || C[x], x).filter(r => k.isNum(r.r));
     if (!ps.length) return;
     const lo = ps.reduce((a, b) => (b.r < a.r ? b : a)), hi = ps.reduce((a, b) => (b.r > a.r ? b : a));
     out.push('<p><strong>' + (x === 'oaa' ? 'Fielding runs against Savant\'s OAA' : 'Framing runs against Savant\'s framing runs') + '.</strong> ' + (ps.length === 1 ? 'Correlation ' + k.num(lo.r, 3) + ' in ' + lo.season : 'Season by season the correlation ranges from ' + k.num(lo.r, 3) + ' (' + lo.season + ') to ' + k.num(hi.r, 3) + ' (' + hi.season + ') over ' + ps.length + ' seasons') +
@@ -204,7 +204,7 @@ function proj(p) {
 function bySeason(v, x) {
   const k = K();
   if (!v || typeof v !== 'object' || k.isNum(v.r) || k.isNum(v.pearson)) return [];
-  return Object.keys(v).filter(s => /^\d{4}$/.test(s) && v[s] && v[s].ok !== false && k.isNum(v[s].r_runs)).sort()
+  return Object.keys(v).filter(s => /^\d{4}$/.test(s) && v[s] && v[s].ok !== false && (k.isNum(v[s].r_runs) || k.isNum(x === 'oaa' ? v[s].r_oaa : v[s].r_rate))).sort()
     .map(s => ({ season: s, n: v[s].n, r: v[s].r_runs, r2: x === 'oaa' ? v[s].r_oaa : v[s].r_rate, floor: v[s].min_called || v[s].min_chances }));
 }
 function ext(d) {
@@ -215,8 +215,8 @@ function ext(d) {
   if (ps.length) {
     host.innerHTML = k.table([{ label: 'Check' }, { label: 'Season' }, { label: 'n', align: 'right' }, { label: 'r (runs)', align: 'right' }, { label: 'r (other)', align: 'right' }],
       [].concat.apply([], ps.map(x => x[1].map(r => [{ v: x[0][1], html: '<strong>' + k.esc(x[0][1]) + '</strong>' }, { v: r.season, html: k.esc(r.season) }, { v: r.n, html: k.int(r.n) + ' ' + x[0][2] },
-        { v: r.r, html: k.num(r.r, 3) }, { v: r.r2, html: k.isNum(r.r2) ? k.num(r.r2, 3) + ' <span class="muted-inline">' + x[0][3] + '</span>' : '—' }]))), { compact: true }) +
-      '<div class="pg-note gq-note">Pearson correlations with Savant\'s leaderboards by season: framing for catchers with 1,000+ called pitches, fielding for fielders with 50+ chances. The current season is partial.</div>';
+        { v: r.r, html: k.isNum(r.r) ? k.num(r.r, 3) : '—' }, { v: r.r2, html: k.isNum(r.r2) ? k.num(r.r2, 3) + ' <span class="muted-inline">' + x[0][3] + '</span>' : '—' }]))), { compact: true }) +
+      '<div class="pg-note gq-note">Pearson correlations with Savant\'s leaderboards by season: framing for catchers with 1,000+ called pitches, fielding for fielders with 50+ chances. The current season is partial. Savant\'s framing leaderboard carries no run values before 2018 (zeros), so those seasons show the rate correlation only.</div>';
     return;
   }
   const items = [['framing', 'Framing runs v Savant framing', 'catchers'], ['oaa', 'Fielding runs v Savant OAA', 'fielders'], ['savant_framing', 'Framing v Savant', 'catchers'], ['catchprob', 'Catch probability v Savant OAA', 'fielders']];

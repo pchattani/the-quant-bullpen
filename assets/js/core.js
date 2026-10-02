@@ -434,6 +434,8 @@ function learn(p, d) {
     if (d.teams && typeof d.teams === 'object' && !Array.isArray(d.teams) && p !== 'index.json') {
       Object.keys(d.teams).forEach(t => { const x = d.teams[t]; if (/^\d+$/.test(t) && x && (x.name || x.abbr)) putTeam(t, x, L); });
     }
+    // a game page names its two teams under teams.home / teams.away (with their ids)
+    if (d.teams && typeof d.teams === 'object' && !Array.isArray(d.teams)) ['home', 'away'].forEach(s => { const x = d.teams[s]; if (x && typeof x === 'object' && /^\d+$/.test(String(x.id || '')) && x.name) putTeam(String(x.id), x, d.level || L); });
     if (d.venues && typeof d.venues === 'object') Object.keys(d.venues).forEach(v => { VENUES[v] = Object.assign({}, VENUES[v] || {}, d.venues[v]); });
     if (d.parks && typeof d.parks === 'object' && !Array.isArray(d.parks)) Object.keys(d.parks).forEach(v => { const x = d.parks[v]; if (x && x.name) VENUES[v] = Object.assign({}, VENUES[v] || {}, x); });
     if (d.park && d.park.name) { const v = String(d.park.vid || d.park.id || d.venue || ''); if (v) VENUES[v] = Object.assign({}, VENUES[v] || {}, d.park); }

@@ -199,7 +199,7 @@ function render(el, params) {
       (post && post.round && phase === 'postseason' ? ' · ' + esc(BP.roundLabel(post.round)) : '') + '</div>' +
       '<div class="hb-tour">' + esc(BP.levelName(L)) + ' <span class="hb-year">' + S + '</span></div>';
     if (!isCurrent) left += '<div class="hb-sub">The ' + S + ' season. <a href="' + BP.href('games', L, S) + '">Every game →</a> · <a href="' + BP.href('standings', L, S) + '">Final standings →</a></div>';
-    else if (phase === 'postseason') left += '<div class="hb-sub">The postseason is under way: series odds from simulating the bracket, each game priced by the plate-appearance model with the probable starters, against Kalshi, Polymarket and the DraftKings line.</div>';
+    else if (phase === 'postseason' && L === 'mlb') left += '<div class="hb-sub">The postseason is under way: series odds from simulating the bracket, each game priced by the plate-appearance model with the probable starters, against Kalshi, Polymarket and the DraftKings line.</div>';
     else if (L === 'aaa') left += '<div class="hb-sub">Triple-A Statcast: the International and Pacific Coast Leagues, with major-league translations on the <a href="#/prospects">prospects page</a>.</div>';
     else left += '<div class="hb-sub">Every game priced by a plate-appearance simulation against the market and the DraftKings line, with live win probability while games are on.</div>';
     left += '</div></div>';

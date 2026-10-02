@@ -65,10 +65,6 @@ body {
   font-size: 0.78rem; color: var(--text2);
 }
 .comp-picker select { min-width: 220px; }
-@media (max-width: 420px) {
-  .comp-picker { min-width: 0; max-width: 100%; }
-  .comp-picker select { min-width: 0; flex: 1 1 auto; max-width: 100%; }
-}
 
 .search-box { position: relative; flex: 1 1 260px; max-width: 460px; margin-left: auto; }
 .search-box input {

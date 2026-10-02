@@ -384,7 +384,7 @@ function gamePanel(el, g, P, L) {
   const top = wp.top || [];
   const balls = P.filter(p => isNum(p.hc_x) && isNum(p.hc_y));
   const pk = g._park || {};
-  el.innerHTML = BP.card('Win probability', 'ours (solid) v ESPN (dotted) · numbered: the biggest plays', '<div id="gm-wp" class="chart-box"></div>' +
+  el.innerHTML = BP.card('Win probability', ((wp.espn || []).length ? 'ours (solid) v ESPN (dotted)' : 'ours') + ' · numbered: the biggest plays', '<div id="gm-wp" class="chart-box"></div>' +
       (top.length ? '<div class="wpa-list">' + top.map((t, k) => '<div class="wpa-row"><span class="wpa-n">' + (k + 1) + '</span><span class="wpa-inn">' + esc(BP.inningLabel(t.inning, t.half, true)) + '</span>' +
         '<span class="wpa-d">' + esc(t.desc || '') + '</span><span class="wpa-v ' + ((t.wpa || 0) > 0 ? 'edge-pos' : 'edge-neg') + '" title="Home win probability added">' + BP.signed((t.wpa || 0) * 100, 1) + '</span></div>').join('') +
         '<div class="section-note">Win probability added for ' + esc(BP.teamName(g.home)) + ', in points.</div></div>' : '')) +
