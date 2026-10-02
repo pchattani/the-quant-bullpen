@@ -648,7 +648,9 @@ function render(el, params) {
       (g.series ? '<a href="' + BP.ghref('postseason') + '">Postseason</a>' : '<a href="' + BP.href('standings', L, S) + '">Standings</a>') + '</div>' +
       header(g, L, S) +
       (tabs.length > 1 ? '<div class="seg-tabs" id="gm-tabs">' + tabs.map(t => '<a href="javascript:void(0)" data-tab="' + t.key + '"' + (t.key === tab ? ' class="active"' : '') + '>' + esc(t.label) + '</a>').join('') + '</div>' : '') +
-      '<div id="gm-panel"></div>' + (res.full ? '' : '<div class="section-note">The full game centre for this game is not built yet; this is the schedule card.</div>');
+      '<div id="gm-panel"></div>' + (res.full ? '' : '<div class="section-note">' + (Number(S || BP.currentSeason(L)) < Number(BP.currentSeason(L)) ?
+        'Pitch-by-pitch game centres are kept on the site for the current season only; this is the schedule card. Stats, tables and careers for the season are complete.' :
+        'The full game centre for this game is not built yet; this is the schedule card.') + '</div>');
     const panel = document.getElementById('gm-panel');
     const show = k => {
       TAB[gpk] = k;
