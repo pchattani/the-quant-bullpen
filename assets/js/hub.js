@@ -28,11 +28,28 @@ const LEADER_META = {
   framing_runs: ['Framing runs', '1'], fielding_runs: ['Fielding runs', '1']
 };
 let GLOSS = null;
+/* Leader keys carry the board's role as a prefix (h_ hitters, p_ pitchers, t_ teams); the glossary repeats a key
+   across roles ("war" is the hitters' WAR, the pitchers' WAR (RA9) and the teams' Total WAR), so the role's own
+   entry is looked up first. */
+const ROLE_OF = { h: 'hitter', p: 'pitcher', t: 'team' };
 function glossMeta(key0) {
+  const pre = (String(key0).match(/^([hpt])_/) || [])[1];
   const key = String(key0).replace(/^[hpt]_/, '');
-  if (GLOSS && (GLOSS[key0] || GLOSS[key])) return GLOSS[key0] || GLOSS[key];
+  const role = pre ? ROLE_OF[pre] : null;
+  if (GLOSS) {
+    const hit = (role && GLOSS[role + ':' + key]) || GLOSS[key0] || (!role && GLOSS[key]);
+    if (hit) return hit;
+  }
   const m = LEADER_META[key];
   return m ? { label: m[0], fmt: m[1] } : { label: BP.titleCase(key), fmt: null };
+}
+/* A tab's label; a metric shown for both hitters and pitchers names its role so the two tabs differ. */
+function leaderLabel(k, keys) {
+  const base = String(k).replace(/^[hpt]_/, '');
+  const pre = (String(k).match(/^([hpt])_/) || [])[1];
+  const label = glossMeta(k).label;
+  const shared = pre && keys.filter(x => String(x).replace(/^[hpt]_/, '') === base).length > 1;
+  return shared ? label + (pre === 'h' ? ' · hitters' : pre === 'p' ? ' · pitchers' : ' · teams') : label;
 }
 function indexGlossary(g) {
   const out = {};
@@ -40,7 +57,10 @@ function indexGlossary(g) {
   const visit = x => {
     if (Array.isArray(x)) { x.forEach(visit); return; }
     if (!x || typeof x !== 'object') return;
-    if (x.key && x.label) out[x.key] = x;
+    if (x.key && x.label) {
+      if (x.kind) out[x.kind + ':' + x.key] = x;
+      if (!out[x.key]) out[x.key] = x;
+    }
     ['groups', 'items', 'metrics', 'entries'].forEach(k => { if (x[k]) visit(x[k]); });
     if (!x.key && !x.groups && !x.items && !x.metrics) Object.keys(x).forEach(k => { if (x[k] && typeof x[k] === 'object') visit(x[k]); });
   };
@@ -73,7 +93,7 @@ function leadersBlock(el, leaders, L) {
         '<span class="rk-bar"><span style="width:' + (30 + 70 * t).toFixed(0) + '%"></span></span><span class="rk-v">' + fmtLeader(active, r[1]) + '</span></div>';
     }).join('');
   };
-  el.innerHTML = '<div class="toggle-row">' + BP.toggles(keys.map(k => ({ key: k, label: glossMeta(k).label })), active, 'data-ld') + '</div><div class="ld-rows"></div>' +
+  el.innerHTML = '<div class="toggle-row">' + BP.toggles(keys.map(k => ({ key: k, label: leaderLabel(k, keys) })), active, 'data-ld') + '</div><div class="ld-rows"></div>' +
     '<a class="more-link" href="' + BP.href('leaders', L) + '">Every leaderboard, with filters and minimum samples →</a>';
   BP.wireToggles(el, 'data-ld', k => { active = k; draw(); });
   draw();

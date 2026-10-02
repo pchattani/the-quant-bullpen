@@ -130,8 +130,9 @@ const CALLS = {
   B: ['Ball', '#58a6ff', 'ball'], S: ['Strike', '#f85149', 'called'], X: ['In play', '#3fb950', 'inplay'], C: ['Called strike', '#f85149', 'called']
 };
 const ROUND_LONG = { F: 'Wild Card Series', WC: 'Wild Card Series', D: 'Division Series', DS: 'Division Series', L: 'League Championship Series',
-  LCS: 'League Championship Series', CS: 'League Championship Series', W: 'World Series', WS: 'World Series', R: 'Regular season', S: 'Spring training', E: 'Exhibition', A: 'All-Star Game' };
-const ROUND_SHORT = { F: 'WC', WC: 'WC', D: 'DS', DS: 'DS', L: 'LCS', LCS: 'LCS', CS: 'LCS', W: 'WS', WS: 'WS', R: 'Reg', S: 'ST', E: 'Exh', A: 'ASG' };
+  LCS: 'League Championship Series', CS: 'League Championship Series', W: 'World Series', WS: 'World Series', R: 'Regular season', S: 'Spring training', E: 'Exhibition', A: 'All-Star Game',
+  C: 'Triple-A National Championship' };
+const ROUND_SHORT = { F: 'WC', WC: 'WC', D: 'DS', DS: 'DS', L: 'LCS', LCS: 'LCS', CS: 'LCS', W: 'WS', WS: 'WS', R: 'Reg', S: 'ST', E: 'Exh', A: 'ASG', C: 'Champ' };
 const ROUND_KEY = { F: 'WC', WC: 'WC', D: 'DS', DS: 'DS', L: 'LCS', LCS: 'LCS', CS: 'LCS', W: 'WS', WS: 'WS' };
 
 // ── state and registries ───────────────────────────────────────────────────

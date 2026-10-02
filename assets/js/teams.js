@@ -322,7 +322,7 @@ function logTable(L, S, t, tid, sched) {
   const ll = log.filter(r => res(r) !== null && k.isNum(pOf(r)));
   const lossOf = (rs, f) => (rs.length ? -rs.reduce((s0, r) => { const p = Math.min(0.999, Math.max(0.001, f(r))); return s0 + (res(r) ? Math.log(p) : Math.log(1 - p)); }, 0) / rs.length : null);
   const both = ll.filter(r => k.isNum(mOf(r)));
-  const GT = { R: '', F: 'WC', D: 'DS', L: 'LCS', W: 'WS' };
+  const GT = { R: '', F: 'WC', D: 'DS', L: 'LCS', W: 'WS', C: 'Champ' };
   host.innerHTML = (ll.length ? '<div class="pg-note gq-note">' + ll.length + ' finished games with a model price: ' + ll.filter(r => res(r)).length + ' wins against ' + k.num(ll.reduce((s0, r) => s0 + pOf(r), 0), 1) + ' expected. Model log-loss ' + k.num(lossOf(ll, pOf), 3) +
     (both.length ? '; on the ' + both.length + ' games with a market price, model ' + k.num(lossOf(both, pOf), 3) + ' against market ' + k.num(lossOf(both, mOf), 3) : '') + ' (a coin scores 0.693). Past games carry the walk-forward backtest price.</div>' : '<div class="pg-note gq-note">Model prices for past games appear once the schedule payload carries them.</div>') +
     k.table([{ label: 'Date' }, { label: 'Opponent' }, { label: 'Result' }, { label: 'Model', align: 'right', title: 'Pre-game win probability' }, { label: 'Market', align: 'right' }, { label: '' }],
