@@ -2,8 +2,9 @@
  * needs" (BP.valueTeam(host, L, S, tid), called by teams.js and npb.js).
  *
  * Value: the leaderboard (WAR this season, the rate per 600 PA / 700 BF, the percentile, last season, next season's
- * projection, the components behind it) with level, kind, club, position and sample filters, and the best at each
- * position (C 1B 2B 3B SS LF CF RF DH SP RP).
+ * projection, the components behind it) with level, kind, club, position and sample filters, valuation v2 (MLB: the next
+ * five seasons with bands, injured-list risk and wins over the median starter; Triple-A: the prospect model's value), and
+ * the best at each position (C 1B 2B 3B SS LF CF RF DH SP RP).
  * Trade: two clubs and the players moving each way; per club the value in and out, the depth chart after the trade
  * (the same allocation as oddsmarkets/baseball/analytics/trade.allocate: positions by scarcity, the best available
  * eligible player by projected value, 80% caps at catcher and 95% elsewhere, a fifth of the starts per starter, a
@@ -59,6 +60,7 @@ function valuePage(el, params) {
     const teams = Array.from(new Set(rows.map(r => r[F.team]).filter(Boolean))).sort((a, b) => BP.teamAbbr(a).localeCompare(BP.teamAbbr(b)));
     const lgOf = t => (BP.teamInfo(t) || {}).league || '';
     const leagues = Array.from(new Set(teams.map(lgOf).filter(Boolean))).sort();
+    const v2box = (d.valuation || d.prospects) ? '<div class="card"><div class="card-header" id="val-v2-h"></div><div id="val-v2" class="val-v2"></div><div class="npb-note" id="val-v2-note"></div></div>' : '';
     let h = head + '<div class="card"><div class="card-header">Leaderboard <span class="card-sub" id="val-sub"></span></div>' +
       '<div class="val-controls"><span class="tgl" id="val-kind">' + BP.toggles([{ key: 'H', label: 'Hitters' }, { key: 'P', label: 'Pitchers' }], V.kind) + '</span>' +
       (leagues.length > 1 ? '<label>League <select id="val-lg"><option value="">All</option>' + leagues.map(g => '<option value="' + esc(g) + '"' + (g === V.lg ? ' selected' : '') + '>' + esc(g) + '</option>').join('') + '</select></label>' : '') +
@@ -67,6 +69,7 @@ function valuePage(el, params) {
       '<label>Min <span id="val-min-u"></span> <span id="val-min-v"></span><input id="val-min" type="range" min="0" max="700" step="10"></label>' +
       '<label>Find <input id="val-q" type="search" placeholder="player…" value="' + esc(V.q) + '"></label></div>' +
       '<div id="val-table"></div><div class="npb-note" id="val-note"></div></div>';
+    h += v2box;
     h += '<div class="card"><div class="card-header">Best at each position <span class="card-sub">Players whose primary position it is (most games there; pitchers by role), at least half the leaderboard floor; the percentile is within the position.</span></div><div class="val-best" id="val-best"></div></div>';
     el.innerHTML = h;
     const $ = id => document.getElementById(id);
@@ -100,6 +103,7 @@ function valuePage(el, params) {
       const vtxt = ['H', 'P'].map(k => { const v = (pj[k] || {}).validation; if (!v) return ''; const r = v.rmse || {};
         return (k === 'H' ? 'Hitters' : 'Pitchers') + ': out-of-sample RMSE ' + BP.num(r.projection, 2) + ' against ' + BP.num(r.last_season, 2) + ' for last season\'s rate and ' + BP.num(r.league_rate, 2) + ' for the league rate (' + esc(v.unit) + ', ' + (v.targets || []).length + ' target seasons, players with ' + v.min_n + '+).'; }).filter(Boolean).join(' ');
       $('val-note').innerHTML = esc((d.notes || []).join(' ')) + (vtxt ? ' Projection check: ' + vtxt : '') + ' Floors: ' + fl.H + ' PA, ' + fl.P + ' BF.';
+      if ($('val-v2')) drawV2(d, F, sel, L, S, $);
     };
     const best = d.best || {};
     $('val-best').innerHTML = POS.map(p => {
@@ -118,6 +122,51 @@ function valuePage(el, params) {
     $('val-q').oninput = e => { V.q = e.target.value; clearTimeout(timer); timer = setTimeout(draw, 200); };
     draw();
   });
+}
+
+// ── valuation v2 (the next five seasons; Triple-A: the prospect model) ──────
+
+function band(lo, hi) { return isNum(lo) && isNum(hi) ? '<span class="muted-inline">' + n1(lo) + ' to ' + n1(hi) + '</span>' : ''; }
+function drawV2(d, F, sel, L, S, $) {
+  if (d.valuation && F.v5 !== undefined) {
+    const vm = d.valuation;
+    const list = sel.filter(r => isNum(r[F.v5])).sort((a, b) => b[F.v5] - a[F.v5]).slice(0, 300);
+    $('val-v2-h').innerHTML = 'Valuation: the next five seasons <span class="card-sub">Expected WAR next season and over three, with the 80% band of what players with that expectation went on to produce; the five-season value (discounted 8% a year); injured-list history and risk; wins over the median starter at his position. Same filters as the leaderboard.</span>';
+    const rows = list.map(r => {
+      const il = r[F.il3] || [];
+      return [{ v: r[F.name], html: plink(L, r[F.pid], r[F.name], S, r[F.kind]) }, { v: BP.teamAbbr(r[F.team]), html: tlink(L, r[F.team], S) }, esc(r[F.pos] || ''),
+        { v: r[F.age], html: n1(r[F.age]), align: 'right' }, { v: r[F.e1], html: '<strong>' + s1(r[F.e1]) + '</strong> ' + band(r[F.lo1], r[F.hi1]), align: 'right' },
+        { v: r[F.e3], html: s1(r[F.e3]) + ' ' + band(r[F.lo3], r[F.hi3]), align: 'right' }, { v: r[F.v5], html: '<strong>' + s1(r[F.v5]) + '</strong>', align: 'right' },
+        { v: r[F.over_line], html: isNum(r[F.over_line]) ? BP.signed(r[F.over_line], 1) : '—', align: 'right' },
+        { v: (il[0] || 0) + (il[1] || 0) + (il[2] || 0), html: il.length ? il.map(x => BP.int(x)).join(' / ') : '—', align: 'right' },
+        { v: r[F.il_p30], html: isNum(r[F.il_exp]) ? BP.int(r[F.il_exp]) + ' d · ' + BP.pct(r[F.il_p30], 0) : '—', align: 'right' }];
+    });
+    $('val-v2').innerHTML = BP.tableHTML([{ label: 'Player' }, { label: 'Club' }, { label: 'Pos' }, { label: 'Age', align: 'right' },
+      { label: 'Next season', align: 'right', title: 'Expected WAR next season and its 80% band' }, { label: '3 seasons', align: 'right', title: 'Expected WAR over the next three seasons and its 80% band' },
+      { label: 'Value (5 yrs)', align: 'right', title: 'Expected WAR over five seasons, discounted 8% a year' },
+      { label: 'v median starter', align: 'right', title: 'Projected full-season wins at his position minus the median starter there (the 15th best)' },
+      { label: 'IL days', align: 'right', title: 'Days on the injured list: two seasons ago / last season / this season' },
+      { label: 'IL risk', align: 'right', title: 'Expected injured-list days next season and the chance of 30 or more' }], rows, { compact: true, sticky: true });
+    BP.sortable($('val-v2'));
+    const pos = vm.positions || {};
+    const cov = (vm.band_fit || {}).coverage || {};
+    const ilv = vm.il_fit || {};
+    const lines = Object.keys(pos).filter(p => isNum((pos[p] || {}).delta)).map(p => p + ' ' + n1(pos[p].line) + (pos[p].delta > 0 ? ' (scarce, ' + BP.signed(pos[p].delta, 1) + ')' : '')).join(', ');
+    const ivh = (ilv.H || {}).validation, ivp = (ilv.P || {}).validation;
+    $('val-v2-note').innerHTML = esc((vm.notes || []).join(' ')) + ' Median-starter lines (full-season wins): ' + esc(lines) + '.' +
+      (cov.H1 ? ' Band check (out of sample): ' + BP.pct(cov.H1.rate, 0) + ' of hitters and ' + BP.pct((cov.P1 || {}).rate, 0) + ' of pitchers landed inside next season\'s 80% band; ' + BP.pct((cov.H3 || {}).rate, 0) + ' and ' + BP.pct((cov.P3 || {}).rate, 0) + ' inside the three-season band.' : '') +
+      (ivh && ivp ? ' Injured-list model: mean absolute error ' + n1(ivh.mae_model) + ' days against ' + n1(ivh.mae_mean) + ' for the league mean (hitters), ' + n1(ivp.mae_model) + ' against ' + n1(ivp.mae_mean) + ' (pitchers); it did not improve playing-time projections walk-forward, so it is shown as risk and not used in them.' : '');
+  } else if (d.prospects && F.p_value !== undefined) {
+    const LV = { aaa: 'Triple-A', aa: 'Double-A', hia: 'High-A', a: 'Single-A' };
+    const list = sel.filter(r => isNum(r[F.p_value])).sort((a, b) => b[F.p_value] - a[F.p_value]).slice(0, 200);
+    $('val-v2-h').innerHTML = 'Prospect value <span class="card-sub">Expected MLB WAR over the next four seasons (discounted) from the season\'s minor-league line at his highest level; the same filters as the leaderboard.</span>';
+    $('val-v2').innerHTML = BP.tableHTML([{ label: 'Player' }, { label: 'Club' }, { label: 'Pos' }, { label: 'Age', align: 'right' }, { label: 'Line' }, { label: 'Performance z', align: 'right' }, { label: 'Expected MLB WAR', align: 'right' }],
+      list.map(r => [{ v: r[F.name], html: plink(L, r[F.pid], r[F.name], S, r[F.kind]) }, { v: BP.teamAbbr(r[F.team]), html: tlink(L, r[F.team], S) }, esc(r[F.pos] || ''),
+        { v: r[F.age], html: n1(r[F.age]), align: 'right' }, esc(LV[r[F.p_level]] || r[F.p_level] || ''), { v: r[F.p_z], html: isNum(r[F.p_z]) ? BP.signed(r[F.p_z], 1) : '—', align: 'right' },
+        { v: r[F.p_value], html: '<strong>' + n1(r[F.p_value]) + '</strong>', align: 'right' }]), { compact: true, sticky: true });
+    BP.sortable($('val-v2'));
+    $('val-v2-note').innerHTML = esc(((d.prospects || {}).notes || []).join(' '));
+  }
 }
 
 // ── the depth-chart allocation (mirror of analytics/trade.allocate) ─────────

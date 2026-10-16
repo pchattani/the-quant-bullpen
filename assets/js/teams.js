@@ -171,6 +171,7 @@ function renderTeam(el, params, state) {
     h += '<div class="card"><div class="card-header">Team profile <span class="card-sub">Percentiles among ' + k.LN(L) + ' teams on the team catalogue.</span></div><div class="gq-pad">' + (cat && cat.metrics ? k.sliders(cat.metrics, v, pc, {}) : k.muted('The team catalogue is not available yet.')) + '</div></div>';
     h += '<div class="card"><div class="card-header">Roster value <span class="card-sub">Bullpen WAR this season for everyone who played for the team (latest team), plus the 40-man roster and injured list where the fetch recorded them. Click a player for his page.</span></div><div class="grid-2"><div id="tm-roster"></div><div id="tm-war" style="height:360px"></div></div></div>';
     h += '<div id="tm-value"></div>';
+    h += '<div id="tm-moves"></div>';
     h += '<div class="grid-2"><div class="card"><div class="card-header">Projected lineup <span class="card-sub">The regulars (most plate appearances) ordered by projected wOBA, with their wOBA against each pitcher hand this season. The game model itself uses the posted lineup, else the latest one against a starter of the same hand.</span></div><div id="tm-lineup"></div></div>' +
       '<div class="card"><div class="card-header">Rotation <span class="card-sub">Starters by starts, with expected RA9 from xwOBA+ against and the pitch-model scores.</span></div><div id="tm-rot"></div></div></div>';
     h += '<div class="grid-2"><div class="card"><div class="card-header">Bullpen <span class="card-sub">Relievers by appearances, with their leverage (gmLI) and quality. On game day the model makes a reliever unavailable after 30+ pitches the day before or pitching on both of the last two days, and half-available after pitching yesterday; the game centre shows that day\'s availability.</span></div><div id="tm-pen"></div></div>' +
@@ -186,6 +187,7 @@ function renderTeam(el, params, state) {
     park(res[2], vid);
     logTable(L, S, t, tid, res[6]);
     if (typeof BP.valueTeam === 'function') BP.valueTeam(document.getElementById('tm-value'), L, S, tid);   // value.js: strengths and needs
+    if (typeof BP.movesTeam === 'function') BP.movesTeam(document.getElementById('tm-moves'), L, S, tid);   // moves.js: trades and moves
     if (typeof BP.setMeta === 'function') { try { BP.setMeta(k.esc(k.teamName(tid))); } catch (e) { /* optional */ } }
   });
 }

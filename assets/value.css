@@ -57,3 +57,29 @@
   .val-controls input[type=range] { width: 90px; }
   .trd-side .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* moves (assets/js/moves.js) and fantasy (assets/js/fantasy.js) */
+.trd-clubs { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; padding: 8px 12px; }
+.trd-club { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; min-width: 0; overflow-wrap: anywhere; }
+.trd-club.won { border-color: var(--green); }
+.trd-club-n { margin-top: 4px; font-size: 0.86rem; }
+.trd-club-r { font-size: 0.78rem; margin-top: 2px; }
+.mv-k { white-space: nowrap; font-size: 0.78rem; }
+.mv-trade, .mv-signing { color: var(--green); }
+.mv-il_place, .mv-dfa, .mv-release { color: var(--red); }
+.ft-line { font-size: 0.78rem; color: var(--text2); white-space: nowrap; }
+.ft-tier { display: inline-block; min-width: 18px; text-align: center; border-radius: 4px; font-size: 0.74rem; font-weight: 700; color: #0d1117; padding: 0 4px; }
+.ft-t1 { background: #3fb950; }
+.ft-t2 { background: #8ddb8c; }
+.ft-t3 { background: #d2c522; }
+.ft-t4 { background: #d29922; }
+.ft-t5 { background: #f0883e; }
+.ft-t6 { background: #f85149; }
+.ft-ws { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 4px 0 12px; }
+.ft-w { display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--text2); }
+.ft-w input { width: 64px; background: var(--bg3); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 3px 5px; }
+@media (max-width: 640px) {
+  .trd-clubs { grid-template-columns: minmax(0, 1fr); }
+  .ft-line { white-space: normal; }
+}
+.val-v2 .table-wrap, #val-table .table-wrap { max-height: 640px; overflow-y: auto; }

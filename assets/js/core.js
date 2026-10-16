@@ -188,6 +188,8 @@ addRoute('awards', 'awards', true);
 addRoute('lab', 'lab');
 addRoute('value', 'value');
 addRoute('trade', 'trade');
+addRoute('moves', 'moves');
+addRoute('fantasy', 'fantasy');
 addRoute('compare', 'compare', true);
 addRoute('compare/:a', 'compare', true);
 addRoute('compare/:a/:b', 'compare', true);
@@ -203,12 +205,12 @@ const ALIASES = { home: 'hub', index: 'hub', '': 'hub', schedule: 'games', score
 const TITLES = {
   hub: 'Hub', games: 'Games', game: 'Game centre', standings: 'Standings', postseason: 'Postseason', hitters: 'Hitters', pitchers: 'Pitchers',
   hitter: 'Hitter', pitcher: 'Pitcher', player: 'Player', teams: 'Teams', team: 'Team', leaders: 'Leaders', umpires: 'Umpires', umpire: 'Umpire',
-  parks: 'Parks', park: 'Park', prospects: 'Prospects', history: 'History', awards: 'Awards', lab: 'Lab', compare: 'Compare', value: 'Value', trade: 'Trade simulator',
+  parks: 'Parks', park: 'Park', prospects: 'Prospects', history: 'History', awards: 'Awards', lab: 'Lab', compare: 'Compare', value: 'Value', trade: 'Trade simulator', moves: 'Moves', fantasy: 'Fantasy',
   markets: 'Markets', calibration: 'Calibration', glossary: 'Glossary', methodology: 'Methodology', disclaimer: 'Disclaimer & terms'
 };
 const NAV_OF = { hub: 'hub', games: 'games', game: 'games', standings: 'standings', postseason: 'postseason', hitters: 'hitters', hitter: 'hitters',
   pitchers: 'pitchers', pitcher: 'pitchers', player: 'hitters', teams: 'teams', team: 'teams', leaders: 'leaders', umpires: 'umpires', umpire: 'umpires',
-  parks: 'parks', park: 'parks', prospects: 'prospects', history: 'history', awards: 'awards', lab: 'lab', compare: 'compare', value: 'value', trade: 'trade', markets: 'markets',
+  parks: 'parks', park: 'parks', prospects: 'prospects', history: 'history', awards: 'awards', lab: 'lab', compare: 'compare', value: 'value', trade: 'trade', moves: 'moves', fantasy: 'fantasy', markets: 'markets',
   calibration: 'calibration', glossary: 'glossary', methodology: 'methodology' };
 // Where a page lands when the level is switched (id pages fall back to their list).
 const SWITCH_TO = { game: 'games', hitter: 'hitters', pitcher: 'pitchers', player: 'hitters', team: 'teams' };
@@ -1167,7 +1169,7 @@ function updateHeader() {
   const links = { hub: '#/' + L + sq(L, S), games: href('games', L, S), standings: href('standings', L, S), postseason: ghref('postseason', S),
     hitters: href('hitters', L, S), pitchers: href('pitchers', L, S), teams: href('teams', L, S), leaders: href('leaders', L, S),
     umpires: ghref('umpires', S), parks: ghref('parks', S), prospects: '#/prospects', history: '#/history', awards: ghref('awards', S),
-    lab: href('lab', L, S), compare: '#/compare', value: href('value', L, S), trade: href('trade', L === 'aaa' ? 'mlb' : L, L === 'aaa' ? null : S), markets: '#/markets', calibration: '#/calibration', glossary: '#/glossary', methodology: '#/methodology' };
+    lab: href('lab', L, S), compare: '#/compare', value: href('value', L, S), trade: href('trade', L === 'aaa' ? 'mlb' : L, L === 'aaa' ? null : S), moves: '#/mlb/moves', fantasy: '#/mlb/fantasy', markets: '#/markets', calibration: '#/calibration', glossary: '#/glossary', methodology: '#/methodology' };
   document.querySelectorAll('.global-nav a[data-nav]').forEach(a => { if (links[a.dataset.nav]) a.setAttribute('href', links[a.dataset.nav]); });
   const t = document.querySelector('.site-title a');
   if (t) t.setAttribute('href', '#/' + L);
