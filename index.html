@@ -1,67 +1,34 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="en" data-sport="baseball">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
 <title>The Quant Bullpen</title>
-<meta name="theme-color" content="#0d1117">
+<meta name="description" content="Odds, pitch models and analytics for Major League Baseball and Triple-A: game and postseason odds against the market, stuff and location models, our own expected stats, Savant-style percentiles, player value, fantasy rankings, umpire scorecards and a player lab.">
+<meta name="theme-color" content="#07090c">
 <meta property="og:site_name" content="The Quant Bullpen">
 <meta property="og:title" content="The Quant Bullpen">
-<meta property="og:description" content="Odds, pitch models and analytics for Major League Baseball: game and postseason odds against the market, stuff and location models, our own expected stats, umpire scorecards, Triple-A translations and a player lab.">
+<meta property="og:description" content="Odds, pitch models and analytics for Major League Baseball and Triple-A: game and postseason odds against the market, stuff and location models, our own expected stats, Savant-style percentiles, player value, fantasy rankings, umpire scorecards and a player lab.">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary">
-<meta name="description" content="Odds, pitch models and analytics for Major League Baseball: game and postseason odds against the market, stuff and location models, our own expected stats, umpire scorecards, Triple-A translations and a player lab.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2313294b'/%3E%3Ccircle cx='16' cy='16' r='10' fill='%23f4efe6'/%3E%3Cpath d='M9 9.5 C13 13 13 19 9 22.5 M23 9.5 C19 13 19 19 23 22.5' fill='none' stroke='%23d9804e' stroke-width='1.8'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/base.css">
-<link rel="stylesheet" href="assets/bullpen.css">
-<link rel="stylesheet" href="assets/pages.css">
-<link rel="stylesheet" href="assets/pages-g.css">
-<link rel="stylesheet" href="assets/value.css">
-<script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ffb020'/%3E%3Ccircle cx='16' cy='16' r='9.5' fill='%231a1203'/%3E%3Cpath d='M10 10.5 C13.5 13.5 13.5 18.5 10 21.5 M22 10.5 C18.5 13.5 18.5 18.5 22 21.5' fill='none' stroke='%23ffb020' stroke-width='1.8' stroke-dasharray='1.6 1.3'/%3E%3C/svg%3E">
+<script>try{var t=/[?&]theme=(light|dark)/.exec(location.search);t=t?t[1]:localStorage.getItem('qk-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="assets/qk/tokens.css">
+<link rel="stylesheet" href="assets/qk/quant.css">
+<link rel="stylesheet" href="assets/legacy.css">
+<link rel="stylesheet" href="assets/bullpen-qk.css">
 </head>
-<body>
-
-<div id="loading-overlay">
-  <div class="spinner"></div>
-  <div class="loading-text">Loading…</div>
-</div>
-
-<header class="site-header">
-  <div class="container-xl">
-    <div class="header-row">
-      <h1 class="site-title"><a href="#/"><span class="brand-mark bp-mark"></span><span class="brand-text">The Quant Bullpen<span class="brand-tag">Odds, pitch models and analytics for MLB and Triple-A</span></span></a></h1>
-      <div class="league-switch level-switch" role="group" aria-label="Level">
-        <button type="button" class="lg-btn" data-level="mlb" title="Major League Baseball">MLB</button><button type="button" class="lg-btn" data-level="aaa" title="Triple-A">AAA</button>
-      </div>
-      <div class="search-box">
-        <input id="search-input" type="search" placeholder="Search players and teams…" autocomplete="off" spellcheck="false">
-        <div id="search-results" class="search-results"></div>
-      </div>
-      <div class="comp-picker season-picker">
-        <label for="season-select">Season</label>
-        <select id="season-select"></select>
-      </div>
-      <div class="sister-group" aria-label="Sister sites">
-        <a class="sister-link" href="https://pchattani.github.io/the-quant-footballer/" title="The sister site: football odds, models and analytics">⚽ Footballer</a>
-        <a class="sister-link" href="https://pchattani.github.io/the-quant-paddock/" title="The sister site: Formula 1 odds, models and analytics">🏁 Paddock</a>
-        <a class="sister-link" href="https://pchattani.github.io/the-quant-hardwood/" title="The sister site: NBA and WNBA odds, models and analytics">🏀 Hardwood</a>
-        <a class="sister-link" href="https://pchattani.github.io/the-quant-ace/" title="The sister site: ATP and WTA tennis odds, models and analytics">🎾 Ace</a>
-        <a class="sister-link" href="https://pchattani.github.io/the-quant-gridiron/" title="The sister site: NFL odds, models and analytics">🏈 Gridiron</a>
-        <a class="sister-link" href="https://pchattani.github.io/the-quant-rink/" title="The sister site: NHL odds, models and analytics">🏒 Rink</a>
-      </div>
-      <nav class="global-nav hw-nav bp-nav">
-        <a href="#/" data-nav="hub">Hub</a><a href="#/" data-nav="games">Games</a><a href="#/" data-nav="standings">Standings</a><a href="#/postseason" data-nav="postseason">Postseason</a><a href="#/" data-nav="hitters">Hitters</a><a href="#/" data-nav="pitchers">Pitchers</a><a href="#/" data-nav="teams">Teams</a><a href="#/" data-nav="leaders">Leaders</a><a href="#/umpires" data-nav="umpires">Umpires</a><a href="#/parks" data-nav="parks">Parks</a><a href="#/prospects" data-nav="prospects">Prospects</a><a href="#/history" data-nav="history">History</a><a href="#/awards" data-nav="awards">Awards</a><a href="#/" data-nav="lab">Lab</a><a href="#/compare" data-nav="compare">Compare</a><a href="#/" data-nav="value">Value</a><a href="#/" data-nav="trade">Trade</a><a href="#/mlb/moves" data-nav="moves">Moves</a><a href="#/mlb/fantasy" data-nav="fantasy">Fantasy</a><a href="#/markets" data-nav="markets">Markets</a><a href="#/calibration" data-nav="calibration">Calibration</a><a href="#/glossary" data-nav="glossary">Glossary</a><a href="#/methodology" data-nav="methodology">Methodology</a>
-      </nav>
-      <div class="site-sub"><span id="meta-line">—</span></div>
-    </div>
-  </div>
-</header>
-
-<main id="app" class="container-xl hw-main bp-main"></main>
+<body class="qk">
+<div id="qk-shell"></div>
+<main id="main" class="qk-page bp-page"><div id="app"></div></main>
 
 <template id="disclaimer-template">
   <div class="card">
-    <div class="card-header">Disclaimer &amp; terms of use <span class="card-sub">Last updated 1 October 2026</span></div>
+    <div class="card-header">Disclaimer &amp; terms of use <span class="card-sub">Last updated 17 October 2026</span></div>
     <div class="prose-dark pad legal">
       <p>The Quant Bullpen is an independent, non-commercial hobby project that applies statistical models to publicly
       available baseball data for Major League Baseball and Triple-A. By using this site you agree to the terms below. If
@@ -137,10 +104,11 @@
 
       <h5>8. Privacy</h5>
       <p>The site sets no cookies, runs no analytics or advertising, and collects no personal data. Your browser
-      remembers only that you dismissed the first-visit notice and which level (MLB or AAA) you last viewed, locally on
-      your device. The page loads its charting library from a third-party content delivery network (cdn.plot.ly), which
-      receives your IP address when your browser makes the request, like any web server. The site itself is hosted on
-      GitHub Pages, whose own privacy terms apply to its server logs.</p>
+      remembers only that you dismissed the first-visit notice, which level (MLB or AAA) you last viewed and whether you
+      chose the light or dark theme, locally on your device. The page loads its charting library (Apache ECharts) from a
+      third-party content delivery network (cdn.jsdelivr.net) and its typefaces from Google Fonts (fonts.googleapis.com,
+      fonts.gstatic.com); each receives your IP address when your browser makes the request, like any web server. The
+      site itself is hosted on GitHub Pages, whose own privacy terms apply to its server logs.</p>
 
       <h5>9. Changes</h5>
       <p>These terms may change at any time; the date above shows the latest version. Continued use of the site after
@@ -150,76 +118,59 @@
   </div>
 </template>
 
-<footer class="site-footer">
-  <div class="container-xl">
-    <span id="footer-meta">The Quant Bullpen</span>
-    · Schedules, scores and pitch tracking from MLB Advanced Media (MLB Stats API, Baseball Savant), shown for non-commercial, informational use ·
-    lines and win probability from ESPN; public prediction markets ·
-    identifiers from the <a href="https://github.com/chadwickbureau/register">Chadwick Register</a> (<a href="https://opendatacommons.org/licenses/by/1-0/">ODC-BY 1.0</a>) ·
-    the <a href="https://sabr.org/lahman-database/">Lahman database</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC BY-SA 3.0</a>) ·
-    <a href="https://pchattani.github.io/the-quant-footballer/">⚽ The Quant Footballer</a> ·
-    <a href="https://pchattani.github.io/the-quant-paddock/">🏁 The Quant Paddock</a> ·
-    <a href="https://pchattani.github.io/the-quant-hardwood/">🏀 The Quant Hardwood</a> ·
-    <a href="https://pchattani.github.io/the-quant-ace/">🎾 The Quant Ace</a> ·
-    <a href="https://pchattani.github.io/the-quant-gridiron/">🏈 The Quant Gridiron</a> ·
-    <a href="https://pchattani.github.io/the-quant-rink/">🏒 The Quant Rink</a>
-    <div class="footer-legal retro-notice">The information used here was obtained free of charge from and is copyrighted by Retrosheet. Interested parties may contact Retrosheet at &quot;www.retrosheet.org&quot;.</div>
-    <div class="footer-legal">For information and entertainment only &mdash; not betting, financial or professional advice. Probabilities are model estimates and can be wrong; no bets are offered. Unofficial: not affiliated with or endorsed by MLB, MLBAM, any club, player, ESPN or bookmaker; no logos are used and names belong to their owners. 18+. Gamble responsibly. <a href="#/disclaimer">Disclaimer &amp; terms</a></div>
+<div class="bp-legal">
+  <div class="bp-legal-in">
+    <p>Schedules, scores and pitch tracking from MLB Advanced Media (MLB Stats API, Baseball Savant), shown for non-commercial,
+    informational use; lines and win probability from ESPN; public prediction markets (Kalshi, Polymarket). Identifiers from the
+    <a href="https://github.com/chadwickbureau/register">Chadwick Register</a> (<a href="https://opendatacommons.org/licenses/by/1-0/">ODC-BY 1.0</a>);
+    season totals from the <a href="https://sabr.org/lahman-database/">Lahman database</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC BY-SA 3.0</a>).</p>
+    <p class="retro-notice">The information used here was obtained free of charge from and is copyrighted by Retrosheet. Interested parties may contact Retrosheet at &quot;www.retrosheet.org&quot;.</p>
+    <p>For information and entertainment only &mdash; not betting, financial or professional advice. Probabilities are model estimates and can be wrong;
+    no bets are offered. Unofficial: not affiliated with or endorsed by MLB, MLBAM, any club, player, ESPN or bookmaker; no logos are used and names
+    belong to their owners. 18+. Gamble responsibly. <a href="#/disclaimer">Disclaimer &amp; terms</a></p>
   </div>
-</footer>
+</div>
+<div id="qk-footer"></div>
 
 <div id="first-visit-notice" class="fv-notice" hidden>
-  <div class="container-xl fv-row">
+  <div class="fv-row">
     <span><strong>For information and entertainment only.</strong> Game, series and award probabilities are model
     estimates, not betting or financial advice. Unofficial: not affiliated with MLB, MLBAM, any club, player or ESPN;
     no logos are used. 18+ where gambling is discussed. <a href="#/disclaimer">Read the disclaimer &amp; terms</a>.</span>
-    <button type="button" id="fv-dismiss" class="fv-btn">I understand</button>
+    <button type="button" id="fv-dismiss" class="qk-btn primary">I understand</button>
   </div>
 </div>
-<script>
-(function () {
-  var KEY = 'qb-notice-v1', el = document.getElementById('first-visit-notice');
-  var seen = false;
-  try { seen = window.localStorage.getItem(KEY) === '1'; } catch (e) { seen = false; }
-  if (!seen) el.hidden = false;
-  document.getElementById('fv-dismiss').addEventListener('click', function () {
-    el.hidden = true;
-    try { window.localStorage.setItem(KEY, '1'); } catch (e) { /* private mode: shown again next visit */ }
-  });
-})();
-</script>
-<script src="assets/js/core.js"></script>
-<script src="assets/js/charts.js"></script>
-<script src="assets/js/fx.js"></script>
-<script src="assets/js/hub.js"></script>
-<script src="assets/js/games.js"></script>
-<script src="assets/js/game.js"></script>
-<script src="assets/js/standings.js"></script>
-<script src="assets/js/postseason.js"></script>
-<script src="assets/js/markets.js"></script>
-<script src="assets/js/hitters.js"></script>
-<script src="assets/js/pitchers.js"></script>
-<script src="assets/js/player.js"></script>
-<script src="assets/js/teams.js"></script>
-<script src="assets/js/leaders.js"></script>
-<script src="assets/js/umpires.js"></script>
-<script src="assets/js/parks.js"></script>
-<script src="assets/js/prospects.js"></script>
-<script src="assets/js/history.js"></script>
-<script src="assets/js/awards.js"></script>
-<script src="assets/js/lab.js"></script>
-<script src="assets/js/compare.js"></script>
-<script src="assets/js/calibration.js"></script>
-<script src="assets/js/docs.js"></script>
-<script src="assets/js/value.js"></script>
-<script src="assets/js/moves.js"></script>
-<script src="assets/js/fantasy.js"></script>
-<script>
-/* The disclaimer route lives with the shell: its text is the <template> above. */
-BP.route('disclaimer', function (el) {
-  var t = document.getElementById('disclaimer-template');
-  el.innerHTML = t ? t.innerHTML : '';
-});
-</script>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js" defer></script>
+<script src="assets/qk/quant.js" defer></script>
+<script src="assets/qk/quant-charts.js" defer></script>
+<script src="assets/js/plotly-ec.js" defer></script>
+<script src="assets/js/core.js" defer></script>
+<script src="assets/js/charts.js" defer></script>
+<script src="assets/js/fx.js" defer></script>
+<script src="assets/js/overview.js" defer></script>
+<script src="assets/js/games.js" defer></script>
+<script src="assets/js/game.js" defer></script>
+<script src="assets/js/standings.js" defer></script>
+<script src="assets/js/postseason.js" defer></script>
+<script src="assets/js/markets.js" defer></script>
+<script src="assets/js/hitters.js" defer></script>
+<script src="assets/js/pitchers.js" defer></script>
+<script src="assets/js/player.js" defer></script>
+<script src="assets/js/teams.js" defer></script>
+<script src="assets/js/leaders.js" defer></script>
+<script src="assets/js/umpires.js" defer></script>
+<script src="assets/js/parks.js" defer></script>
+<script src="assets/js/prospects.js" defer></script>
+<script src="assets/js/history.js" defer></script>
+<script src="assets/js/awards.js" defer></script>
+<script src="assets/js/lab.js" defer></script>
+<script src="assets/js/compare.js" defer></script>
+<script src="assets/js/calibration.js" defer></script>
+<script src="assets/js/docs.js" defer></script>
+<script src="assets/js/value.js" defer></script>
+<script src="assets/js/moves.js" defer></script>
+<script src="assets/js/fantasy.js" defer></script>
+<script src="assets/js/site.js" defer></script>
 </body>
 </html>

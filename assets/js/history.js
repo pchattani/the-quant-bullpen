@@ -69,7 +69,7 @@ function render(el, params) {
     '<label>Highlight<input id="hi-q" class="gq-search" type="search" placeholder="player…"></label></div>' +
     '<div id="hi-chart" style="height:380px"></div><div id="hi-table"></div><div class="pg-note gq-note" id="hi-note"></div><div class="gq-retro">' + k.esc(BP.RETRO_NOTICE || RETRO) + '</div></div>' +
     '<div class="card"><div class="card-header">League by year <span class="card-sub">The run environment each season is measured against: league runs per nine innings, strikeout and home-run rates.</span></div><div id="hi-env" style="height:300px"></div></div>';
-  return k.ready().then(() => BP.load(k.L(params, BP.state) + '/history.json')).then(d => (k.ok(d) ? d : BP.load('mlb/history.json').then(d2 => d2 || d))).then(d => {
+  return k.ready().then(() => BP.load('mlb/history.json')).then(d => (k.ok(d) ? d : BP.load('mlb/history.json').then(d2 => d2 || d))).then(d => {
     if (!k.alive(el)) return;
     const $ = id => document.getElementById(id);
     if (d && k.isNum(d.first) && Number(d.first) !== FIRST) {

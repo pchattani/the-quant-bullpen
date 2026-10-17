@@ -55,7 +55,7 @@ function fitH(el, want, aspect, lo) {
 function empty(el, text) { const n = node(el); if (n) n.innerHTML = '<div class="muted">' + text + '</div>'; }
 function hexA(hex, a) {
   const h = String(hex || '').replace('#', '');
-  if (h.length !== 6) return 'rgba(139,148,158,' + a + ')';
+  if (h.length !== 6) return BP.alpha ? BP.alpha(hex, a) : 'rgba(139,148,158,' + a + ')';
   return 'rgba(' + parseInt(h.slice(0, 2), 16) + ',' + parseInt(h.slice(2, 4), 16) + ',' + parseInt(h.slice(4, 6), 16) + ',' + a + ')';
 }
 /* Rows from an array of objects or a column-oriented {cols|fields|columns, rows}. */
@@ -454,7 +454,7 @@ function sliderRow(label, p, valueText, title) {
   return '<div class="ps-row"' + (title ? ' title="' + esc(title) + '"' : '') + '>' +
     '<span class="ps-label">' + label + '</span>' +
     '<span class="ps-track">' + (known
-      ? '<span class="ps-fill" style="width:' + x + '%;background:' + col + '"></span><span class="ps-dot" style="left:' + x + '%;background:' + col + '">' + Math.round(p) + '</span>'
+      ? '<span class="ps-fill" style="width:' + x + '%;background:' + col + '"></span><span class="ps-dot" style="left:' + x + '%;background:' + col + ';color:' + (BP.pctInk ? BP.pctInk(p) : '#fff') + '">' + Math.round(p) + '</span>'
       : '<span class="ps-none">below the sample floor</span>') +
     '<i class="ps-tick" style="left:10%"></i><i class="ps-tick mid" style="left:50%"></i><i class="ps-tick" style="left:90%"></i></span>' +
     '<span class="ps-val">' + (valueText === undefined ? '' : valueText) + '</span></div>';

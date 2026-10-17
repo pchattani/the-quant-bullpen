@@ -152,7 +152,7 @@ function render(el, params) {
   const idx = BP.index() || {};
   el.innerHTML = BP.pageHead('Markets', 'The model against Kalshi, Polymarket and the DraftKings line: games, series, the World Series, pennants and awards',
     '<a href="#/calibration">Calibration</a><a href="' + BP.ghref('postseason') + '">Postseason</a><a href="' + BP.ghref('awards') + '">Awards</a>') + '<div id="mk-body"><div class="muted">Loading…</div></div>';
-  return BP.loadAll([BP.ypath('markets.json', L, S), 'markets.json', BP.ypath('season.json', L, S), BP.ypath('awards.json', L, S)]).then(arr => {
+  return BP.loadAll([BP.marketsPath(S), BP.marketsPath(S), BP.ypath('season.json', L, S), BP.ypath('awards.json', L, S)]).then(arr => {
     if (!el.isConnected) return;
     const mk = BP.ok(arr[0]) ? arr[0] : (BP.ok(arr[1]) ? arr[1] : null);
     const season = BP.ok(arr[2]) ? arr[2] : null;

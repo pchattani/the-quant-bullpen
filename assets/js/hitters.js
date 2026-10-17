@@ -85,13 +85,13 @@ K.corr = (xs, ys) => {
 };
 K.alpha = (hex, a) => {
   const h = String(hex || '').replace('#', '');
-  if (h.length !== 6) return 'rgba(88,166,255,' + a + ')';
+  if (h.length !== 6) return BP.alpha ? BP.alpha(hex || 'var(--c-1)', a) : 'rgba(88,166,255,' + a + ')';
   return 'rgba(' + parseInt(h.slice(0, 2), 16) + ',' + parseInt(h.slice(2, 4), 16) + ',' + parseInt(h.slice(4, 6), 16) + ',' + a + ')';
 };
 K.C = Object.assign({ bg: '#0d1117', bg2: '#161b22', bg3: '#21262d', border: '#30363d', text: '#e6edf3', text2: '#8b949e', text3: '#6e7681',
   blue: '#58a6ff', green: '#3fb950', red: '#f85149', orange: '#f97316', purple: '#bc8cff', yellow: '#d29922', teal: '#39d0d8' }, BP.C || {});
 K.PALETTE = BP.PALETTE || ['#58a6ff', '#f97316', '#3fb950', '#bc8cff', '#f85149', '#d29922', '#39d0d8', '#79c0ff', '#d2a8ff', '#ff7b72', '#7ee787', '#e3b341'];
-K.CA = '#e8504f'; K.CB = '#58a6ff';   // compare: side A red (the Savant "hot"), side B blue
+K.CA = 'var(--c-1)'; K.CB = 'var(--c-2)';   // compare: side A chart slot 1, side B slot 2 (the kit's pair)
 K.fold = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 K.titleCase = s => String(s || '').split(/[_\s-]+/).filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
@@ -261,13 +261,14 @@ K.pctColor = p => {
   const a = t < 0.5 ? lo : mid, b = t < 0.5 ? mid : hi, u = t < 0.5 ? t * 2 : (t - 0.5) * 2;
   return 'rgb(' + [0, 1, 2].map(i => Math.round(a[i] + (b[i] - a[i]) * u)).join(',') + ')';
 };
-K.pill = p => (isNum(p) ? '<span class="pct-pill" style="background:' + K.pctColor(p) + '">' + Math.round(p) + '</span>' : '<span class="pct-pill empty">—</span>');
+K.ink = p => (has('pctInk') ? BP.pctInk(p) : '#fff');
+K.pill = p => (isNum(p) ? '<span class="pct-pill" style="background:' + K.pctColor(p) + ';color:' + K.ink(p) + '">' + Math.round(p) + '</span>' : '<span class="pct-pill empty">—</span>');
 /* Savant-style percentile slider: a track, a coloured disc carrying the percentile, the value on the right. */
 K.slider = (label, p, valueText, title, href) => {
   const known = isNum(p), x = known ? Math.max(0, Math.min(100, p)) : 0;
   const lab = href ? '<a href="' + href + '" class="gq-sl-a">' + K.esc(label) + '</a>' : K.esc(label);
   return '<div class="gq-sl"' + (title ? ' title="' + K.esc(title) + '"' : '') + '><span class="gq-sl-label">' + lab + '</span><div class="gq-sl-track">' +
-    (known ? '<div class="gq-sl-fill" style="width:' + x + '%;background:' + K.pctColor(p) + '"></div><span class="gq-sl-dot" style="left:' + x + '%;background:' + K.pctColor(p) + '">' + Math.round(p) + '</span>' : '<span class="gq-sl-none">not enough data</span>') +
+    (known ? '<div class="gq-sl-fill" style="width:' + x + '%;background:' + K.pctColor(p) + '"></div><span class="gq-sl-dot" style="left:' + x + '%;background:' + K.pctColor(p) + ';color:' + K.ink(p) + '">' + Math.round(p) + '</span>' : '<span class="gq-sl-none">not enough data</span>') +
     '</div><span class="gq-sl-val">' + (valueText === undefined ? '' : valueText) + '</span></div>';
 };
 /* Grouped sliders over a whole catalogue. opts {onlyKnown, note, cols, glossary: true}. */

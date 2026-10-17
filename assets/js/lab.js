@@ -201,7 +201,7 @@ function draw(L, S) {
   const hover = r => '<b>' + k.esc(nm(r)) + '</b> · ' + k.esc(k.teamAbbr(tm(r))) + ' · ' + k.int(raw(r, 'n')) + ' ' + nU() +
     '<br>' + k.esc(label(S0.x)) + ': ' + fmt(S0.x, val(r, S0.x)) + ' (pct ' + Math.round(pOf(sortedX, val(r, S0.x), dirx)) + ')' +
     '<br>' + k.esc(label(S0.y)) + ': ' + fmt(S0.y, val(r, S0.y)) + ' (pct ' + Math.round(pOf(sortedY, val(r, S0.y), diry)) + ')' +
-    (S0.shrink && (shrinkable(S0.x) || shrinkable(S0.y)) ? '<br><span style="color:#8b949e">unshrunk: ' + fmt(S0.x, raw(r, S0.x)) + ' · ' + fmt(S0.y, raw(r, S0.y)) + '</span>' : '');
+    (S0.shrink && (shrinkable(S0.x) || shrinkable(S0.y)) ? '<br><span style="opacity:.7">unshrunk: ' + fmt(S0.x, raw(r, S0.x)) + ' · ' + fmt(S0.y, raw(r, S0.y)) + '</span>' : '');
   const trace = (pts, name, color, extra) => Object.assign({
     type: 'scatter', mode: 'markers', name: name, x: pts.map(r => val(r, S0.x)), y: pts.map(r => val(r, S0.y)),
     text: pts.map(hover), hovertemplate: '%{text}<extra></extra>', customdata: pts.map(href),

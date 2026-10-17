@@ -95,7 +95,7 @@ function render(el, params) {
   const idx = BP.index() || {};
   el.innerHTML = BP.pageHead(S + ' postseason', 'The bracket, series odds against the market, and every team’s path to the World Series',
     '<a href="' + BP.href('standings', L, S) + '">Standings</a><a href="#/markets">Markets</a>') + '<div id="ps-body"><div class="muted">Loading…</div></div>';
-  return BP.loadAll([BP.ypath('season.json', L, S), BP.ypath('markets.json', L, S), 'markets.json', BP.ypath('schedule.json', L, S)]).then(arr => {
+  return BP.loadAll([BP.ypath('season.json', L, S), BP.marketsPath(S), BP.marketsPath(S), BP.ypath('schedule.json', L, S)]).then(arr => {
     if (!el.isConnected) return;
     const season = BP.ok(arr[0]) ? arr[0] : null;
     const mk = BP.ok(arr[1]) ? arr[1] : (BP.ok(arr[2]) ? arr[2] : null);

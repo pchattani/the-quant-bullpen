@@ -32,7 +32,7 @@ function probsOf(x) {
 
 function render(el, params, state) {
   const k = K();
-  const L = k.L(params, state);
+  const L = 'mlb';   // the award models are MLB only
   el.innerHTML = '<div class="card"><div class="card-header">Award races <span class="card-sub" id="aw-sub">Loading…</span></div><div class="pg-note gq-note">The model prices each race from the season so far: a conditional logit on value and the features voters reward, fitted on the 2015–2025 winners. Markets are Kalshi and Polymarket midpoints, de-vigged across the field when the field is complete enough. The edge is model minus market in percentage points; it says where the two disagree, not what will happen. 18+; for information only.</div></div><div id="aw-body"></div>';
   return k.ready().then(() => {
     const S = k.S(params, state);

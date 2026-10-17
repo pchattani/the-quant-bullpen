@@ -138,7 +138,7 @@ function renderGlossary(el, params) {
     const groups = g.groups || [];
     USED_IDS = {};
     // Model terms: the build's (data/glossary.json "model") first, then this file's own.
-    const MT = MODEL_TERMS.map(x => [x[0], x[1].slice()]);
+    const MT = MODEL_TERMS.map(x => [x[0], x[1].filter(t => Array.isArray(t))]);
     (g.model || []).forEach(t => { let grp = MT.find(x => x[0] === (t.group || 'Models')); if (!grp) { grp = [t.group || 'Models', []]; MT.unshift(grp); } if (!grp[1].some(y => y[1] === t.label)) grp[1].unshift([t.key + '_model', t.label, t.desc]); });
     const nMetrics = groups.reduce((s, x) => s + (x.entries || []).length, 0);
     const nModel = MT.reduce((s0, x) => s0 + x[1].length, 0);

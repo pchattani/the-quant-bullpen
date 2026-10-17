@@ -1,4 +1,12 @@
-/* The Quant Bullpen — core: namespace, state, routing, cached loading, helpers, search.
+/* The Quant Bullpen — core: namespace, state, routing, cached loading, helpers, search, and the
+ * shell from The Quant design kit (assets/qk: QK.shell top bar, the nine-section nav, search palette,
+ * theme; charts through assets/js/plotly-ec.js on ECharts).
+ *
+ * Sections (docs/REDESIGN.md), each a group of routes with its own tab strip (SECTION_TABS below):
+ *   Overview #/<L> · Games (scoreboard, game centre, odds board) · Standings (standings, postseason,
+ *   awards, history) · Teams · Players (hitters, pitchers, leaderboards, prospects, player pages) ·
+ *   Value & Moves (value, trade simulator, moves) · Fantasy · Lab (scatter lab, compare, parks,
+ *   umpires) · Model (methodology, calibration, glossary, terms). Every old route still resolves.
  *
  * A static shell over JSON payloads under data/ (see oddsmarkets/baseball/PAYLOADS.md).
  * Every page module registers itself with BP.route(name, renderFn) and never edits this
@@ -37,17 +45,24 @@ window.BP = (function () {
 
 // ── constants ──────────────────────────────────────────────────────────────
 
+/* Colours are design tokens (CSS custom properties): HTML uses them directly, the chart shim resolves them
+ * for the current theme at paint time. Model = chart slot 1 (blue), market = slot 2 (orange), on every site. */
 const C = {
-  bg: '#0d1117', bg2: '#161b22', bg3: '#21262d', border: '#30363d',
-  text: '#e6edf3', text2: '#8b949e', text3: '#6e7681',
-  blue: '#58a6ff', green: '#3fb950', red: '#f85149', orange: '#f97316',
-  purple: '#bc8cff', yellow: '#d29922', teal: '#39d0d8',
-  clay: '#d9804e', clay2: '#b8653a', navy: '#1c3a6e', navy2: '#13294b',
-  bp: '#d9804e', p1: '#d9804e', p2: '#58a6ff', home: '#d9804e', away: '#58a6ff',
-  espn: '#8b949e', market: '#e6edf3',
-  pctLow: [50, 105, 220], pctMid: [128, 128, 128], pctHigh: [214, 40, 40]
+  bg: 'var(--bg)', bg2: 'var(--s-1)', bg3: 'var(--s-2)', border: 'var(--line-2)',
+  text: 'var(--ink-1)', text2: 'var(--ink-2)', text3: 'var(--ink-3)',
+  blue: 'var(--c-1)', green: 'var(--up)', red: 'var(--down)', orange: 'var(--c-2)',
+  purple: 'var(--c-7)', yellow: 'var(--c-4)', teal: 'var(--c-3)',
+  clay: 'var(--c-1)', clay2: 'var(--c-1)', navy: 'var(--s-3)', navy2: 'var(--s-3)',
+  bp: 'var(--c-1)', p1: 'var(--c-1)', p2: 'var(--c-2)', home: 'var(--c-1)', away: 'var(--c-2)',
+  espn: 'var(--ink-3)', market: 'var(--c-2)', accent: 'var(--accent)'
 };
-const PALETTE = ['#d9804e', '#58a6ff', '#3fb950', '#bc8cff', '#f85149', '#39d0d8', '#d29922', '#79c0ff', '#d2a8ff', '#ff7b72', '#7ee787', '#e3b341'];
+const PALETTE = ['var(--c-1)', 'var(--c-2)', 'var(--c-3)', 'var(--c-4)', 'var(--c-5)', 'var(--c-6)', 'var(--c-7)', 'var(--c-8)'];
+/* A colour at alpha a: hex -> rgba(); a token or any CSS colour -> color-mix() (resolved by the browser or the chart shim). */
+function alpha(c, a) {
+  const h = String(c || '').replace('#', '');
+  if (/^[0-9a-f]{6}$/i.test(h)) return 'rgba(' + parseInt(h.slice(0, 2), 16) + ',' + parseInt(h.slice(2, 4), 16) + ',' + parseInt(h.slice(4, 6), 16) + ',' + a + ')';
+  return 'color-mix(in srgb, ' + (c || 'var(--ink-3)') + ' ' + Math.round(a * 100) + '%, transparent)';
+}
 const DARK_LAYOUT = {
   paper_bgcolor: 'rgba(0,0,0,0)',
   plot_bgcolor: 'rgba(0,0,0,0)',
@@ -200,14 +215,43 @@ addRoute('glossary/:id', 'glossary', true);
 addRoute('methodology', 'methodology', true);
 addRoute('disclaimer', 'disclaimer', true);
 
-const ALIASES = { home: 'hub', index: 'hub', '': 'hub', schedule: 'games', scores: 'games', playoffs: 'postseason', docs: 'methodology',
-  leaderboards: 'leaders', umpire_scorecards: 'umpires', ballparks: 'parks' };
+const ALIASES = { home: 'hub', index: 'hub', '': 'hub', overview: 'hub', schedule: 'games', scores: 'games', fixtures: 'games', playoffs: 'postseason', docs: 'methodology',
+  leaderboards: 'leaders', umpire_scorecards: 'umpires', ballparks: 'parks', players: 'hitters', model: 'methodology', odds: 'markets', terms: 'disclaimer' };
 const TITLES = {
-  hub: 'Hub', games: 'Games', game: 'Game centre', standings: 'Standings', postseason: 'Postseason', hitters: 'Hitters', pitchers: 'Pitchers',
+  hub: 'Overview', games: 'Games', game: 'Game centre', standings: 'Standings', postseason: 'Postseason', hitters: 'Hitters', pitchers: 'Pitchers',
   hitter: 'Hitter', pitcher: 'Pitcher', player: 'Player', teams: 'Teams', team: 'Team', leaders: 'Leaders', umpires: 'Umpires', umpire: 'Umpire',
   parks: 'Parks', park: 'Park', prospects: 'Prospects', history: 'History', awards: 'Awards', lab: 'Lab', compare: 'Compare', value: 'Value', trade: 'Trade simulator', moves: 'Moves', fantasy: 'Fantasy',
-  markets: 'Markets', calibration: 'Calibration', glossary: 'Glossary', methodology: 'Methodology', disclaimer: 'Disclaimer & terms'
+  markets: 'Odds board', calibration: 'Calibration', glossary: 'Glossary', methodology: 'Methodology', disclaimer: 'Disclaimer & terms'
 };
+/* The nine sections (QK.sections('baseball')) and the routes each one holds. */
+const SECTION_OF = { hub: 'overview', games: 'fixtures', game: 'fixtures', markets: 'fixtures', standings: 'standings', postseason: 'standings', awards: 'standings',
+  history: 'standings', teams: 'teams', team: 'teams', hitters: 'players', pitchers: 'players', hitter: 'players', pitcher: 'players', player: 'players',
+  leaders: 'players', prospects: 'players', value: 'value', trade: 'value', moves: 'value', fantasy: 'fantasy', lab: 'lab', compare: 'lab', parks: 'lab',
+  park: 'lab', umpires: 'lab', umpire: 'lab', methodology: 'model', calibration: 'model', glossary: 'model', disclaimer: 'model' };
+/* Tabs per section: [route, label, scope] with scope 'g' (a global route), 'mlb' (MLB only) or '' (per level). */
+const SECTION_TABS = {
+  fixtures: [['games', 'Scoreboard', ''], ['markets', 'Odds board', 'g']],
+  standings: [['standings', 'Standings', ''], ['postseason', 'Postseason', 'g'], ['awards', 'Award races', 'g'], ['history', 'All-time', 'g']],
+  teams: [['teams', 'All teams', '']],
+  players: [['hitters', 'Hitters', ''], ['pitchers', 'Pitchers', ''], ['leaders', 'Leaderboards', ''], ['prospects', 'Prospects', 'g']],
+  value: [['value', 'Player value', ''], ['trade', 'Trade simulator', 'mlb'], ['moves', 'Moves & trades', 'mlb']],
+  fantasy: [['fantasy', 'Fantasy baseball', 'mlb']],
+  lab: [['lab', 'Scatter lab', ''], ['compare', 'Compare', 'g'], ['parks', 'Parks', 'g'], ['umpires', 'Umpires', 'g']],
+  model: [['methodology', 'Methodology', 'g'], ['calibration', 'Calibration', 'g'], ['glossary', 'Glossary', 'g'], ['disclaimer', 'Terms', 'g']]
+};
+const SECTION_LABEL = { overview: 'Overview', fixtures: 'Games', standings: 'Standings', teams: 'Teams', players: 'Players', value: 'Value & Moves', fantasy: 'Fantasy', lab: 'Lab', model: 'Model' };
+const SECTION_BLURB = {
+  fixtures: 'Every game priced by the plate-appearance model, against the market and the DraftKings line.',
+  standings: 'Divisions, wild cards, the postseason bracket and title odds from the season simulation.',
+  teams: 'Ratings, rosters, schedules, strengths and needs for every club.',
+  players: 'Statcast percentiles, expected stats, arsenals and projections for every player.',
+  value: 'What every player is worth now and over the next five seasons, trades rated and simulated.',
+  fantasy: 'Rotisserie and points rankings, dynasty values, picks, closers, steals and the weekly streamers.',
+  lab: 'Build your own charts: any two metrics, head-to-head comparisons, parks and umpires.',
+  model: 'How the models work, how well they have done against the closing lines, and every metric defined.'
+};
+/* Detail pages: the list they belong to (the back link in the section bar). */
+const DETAIL_OF = { game: 'games', team: 'teams', hitter: 'hitters', pitcher: 'pitchers', player: 'hitters', park: 'parks', umpire: 'umpires' };
 const NAV_OF = { hub: 'hub', games: 'games', game: 'games', standings: 'standings', postseason: 'postseason', hitters: 'hitters', hitter: 'hitters',
   pitchers: 'pitchers', pitcher: 'pitchers', player: 'hitters', teams: 'teams', team: 'teams', leaders: 'leaders', umpires: 'umpires', umpire: 'umpires',
   parks: 'parks', park: 'parks', prospects: 'prospects', history: 'history', awards: 'awards', lab: 'lab', compare: 'compare', value: 'value', trade: 'trade', moves: 'moves', fantasy: 'fantasy', markets: 'markets',
@@ -321,43 +365,94 @@ function render(opts) {
   state.hash = location.hash || '#/';
   if (prevLevel !== state.level || prevSeason !== state.season || !pickerFilled) fillSeasonPicker();
   updateHeader();
-  markNav(NAV_OF[r.name] || '');
+  markNav(SECTION_OF[r.name] || '');
   const app = document.getElementById('app');
   if (!app) return;
   app.innerHTML = '';
+  app.appendChild(sectionBar(r));
   const el = document.createElement('div');
   el.className = 'page page-' + r.name.replace(/[^a-z0-9-]/gi, '-') + ' level-' + state.level;
   app.appendChild(el);
-  document.title = (r.name === 'hub' ? LEVEL_NAME[state.level] + ' · ' : (TITLES[r.name] || 'Page') + (r.global ? '' : ' · ' + LEVEL_NAME[state.level]) + ' · ') + SITE;
+  document.title = (r.name === 'hub' ? LEVEL_NAME[state.level] + ' ' + (state.season || '') + ' · ' : (TITLES[r.name] || 'Page') + (r.global ? '' : ' · ' + LEVEL_NAME[state.level]) + ' · ') + SITE;
   setMeta('');
   if (!keep) window.scrollTo(0, 0);
   const fn = handlerFor(r.name);
   if (!fn) {
     el.innerHTML = r.name === 'notfound'
-      ? comingHTML('Page not found', 'There is no page at <code>' + esc(location.hash) + '</code>. Try the hub or the search box.')
+      ? comingHTML('Page not found', 'There is no page at <code>' + esc(location.hash) + '</code>. Try the overview or the search (press /).')
       : comingHTML((TITLES[r.name] || 'This page') + ' is coming', 'This part of ' + SITE + ' is still being built.');
     return;
   }
   const seq = ++renderSeq;
-  el.innerHTML = '<div class="muted">Loading…</div>';
+  el.innerHTML = window.QK ? QK.skeleton('lines', 6) : '<div class="muted">Loading…</div>';
   ensureNames().then(() => {
     if (seq !== renderSeq || !el.isConnected) return;
     el.innerHTML = '';
     try {
       const out = fn(el, r.params, state);
-      if (out && typeof out.then === 'function') out.then(() => { if (keep) window.scrollTo(0, y0); }, err => showError(el, err));
-      else if (keep) window.scrollTo(0, y0);
+      if (out && typeof out.then === 'function') out.then(() => { if (keep) window.scrollTo(0, y0); jumpNav(el, r); }, err => showError(el, err));
+      else { if (keep) window.scrollTo(0, y0); jumpNav(el, r); }
     } catch (err) { showError(el, err); }
   });
 }
 
 function comingHTML(title, body) {
-  return '<div class="card coming"><div class="pad"><div class="coming-title">' + esc(title) + '</div>' +
-    '<p class="muted-inline">' + body + '</p><p><a href="#/' + state.level + '">Back to the hub →</a></p></div></div>';
+  return '<div class="qk-card coming"><div class="qk-card-body"><div class="coming-title">' + esc(title) + '</div>' +
+    '<p class="muted-inline">' + body + '</p><p><a class="qk-link" href="#/' + state.level + '">Back to the overview</a></p></div></div>';
+}
+/* Long detail pages (team, player) get a sticky "on this page" strip of their card titles. */
+const JUMP_PAGES = ['team', 'hitter', 'pitcher', 'player'];
+function jumpNav(el, r) {
+  if (JUMP_PAGES.indexOf(r.name) < 0) return;
+  const build = () => {
+    if (!el.isConnected) return;
+    const heads = Array.prototype.slice.call(el.querySelectorAll('.card > .card-header, .qk-card > .qk-card-head')).filter(h => h.offsetParent);
+    let nav = el.parentNode.querySelector('.bp-jump');
+    if (heads.length < 4) { if (nav) nav.remove(); return; }
+    if (!nav) { nav = document.createElement('nav'); nav.className = 'bp-jump'; nav.setAttribute('aria-label', 'On this page'); el.parentNode.insertBefore(nav, el); }
+    const label = h => { const t = h.querySelector('.qk-card-title'); const raw = t ? t.textContent : (h.childNodes[0] ? h.childNodes[0].textContent : h.textContent); return String(raw || '').trim().slice(0, 34); };
+    nav.innerHTML = '<div class="qk-chips scroll">' + heads.map((h, i) => '<button type="button" class="qk-chip" data-i="' + i + '">' + esc(label(h)) + '</button>').join('') + '</div>';
+    nav.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+      const c = heads[+b.dataset.i].closest('.card, .qk-card') || heads[+b.dataset.i];
+      const off = ['.qk-topbar', '.qk-secnav'].reduce((a, q) => a + ((document.querySelector(q) || {}).offsetHeight || 0), 0) + nav.offsetHeight + 12;
+      window.scrollTo({ top: c.getBoundingClientRect().top + window.scrollY - off, behavior: QK && QK.reducedMotion && QK.reducedMotion() ? 'auto' : 'smooth' });
+    }));
+  };
+  setTimeout(build, 350);
+  setTimeout(build, 1500);
+  el.addEventListener('click', e => { if (e.target.closest && e.target.closest('.seg-tabs a, .tbtn, [role="tab"]')) setTimeout(build, 250); });
+}
+/* The bar above every page: section kicker and title, the section's tabs; on a detail page a link back to its list. */
+function tabHref(t, L) {
+  return t[2] === 'g' ? ghref(t[0]) : t[2] === 'mlb' ? '#/mlb/' + t[0] : href(t[0], L);
+}
+function sectionBar(r) {
+  const sec = SECTION_OF[r.name] || '';
+  const bar = document.createElement('div');
+  bar.className = 'bp-secbar';
+  if (!sec || sec === 'overview' || r.name === 'notfound') { bar.hidden = true; bar.innerHTML = '<span id="meta-line" hidden></span>'; return bar; }
+  const L = state.level, S = state.season;
+  const tabs = SECTION_TABS[sec] || [];
+  const detail = DETAIL_OF[r.name];
+  const glob = (routeEntry(r.name) || {}).global;
+  const kicker = (sec === 'model' ? SITE : glob && ['postseason', 'awards', 'markets', 'compare'].indexOf(r.name) < 0 ? SITE + ' · MLB and Triple-A' : LEVEL_LONG[L] + ' · ' + S);
+  let back = '';
+  if (detail) {
+    const t = tabs.find(x => x[0] === detail) || [detail, TITLES[detail] || titleCase(detail), routeEntry(detail) && routeEntry(detail).global ? 'g' : ''];
+    back = '<a class="bp-back" href="' + tabHref(t, L) + '"><span aria-hidden="true">←</span> ' + esc(SECTION_LABEL[sec] === t[1] ? t[1] : SECTION_LABEL[sec] + ' · ' + t[1]) + '</a>';
+  }
+  bar.classList.toggle('is-detail', !!detail);
+  bar.innerHTML = '<div class="bp-secbar-in"><div class="bp-sec-title"><div class="qk-kicker">' + esc(kicker) + '</div>' +
+    (detail ? back : '<h1>' + esc(SECTION_LABEL[sec]) + '</h1><p class="bp-blurb">' + esc(SECTION_BLURB[sec] || '') + '</p>') + '</div>' +
+    '<div class="bp-meta" id="meta-line"></div></div>' +
+    (tabs.length > 1 && !detail ? '<nav class="qk-tabs bp-tabs" aria-label="' + esc(SECTION_LABEL[sec]) + ' pages">' + tabs.map(t =>
+      '<a class="qk-tab" href="' + tabHref(t, L) + '"' + (t[0] === r.name ? ' aria-selected="true" aria-current="page"' : ' aria-selected="false"') + '>' + esc(t[1]) +
+      (t[2] === 'mlb' && L !== 'mlb' ? ' <span class="bp-tab-tag">MLB</span>' : '') + '</a>').join('') + '</nav>' : '');
+  return bar;
 }
 function showError(el, err) {
   console.error(err);
-  if (el) el.insertAdjacentHTML('afterbegin', '<div class="error-banner">This page could not be shown: ' + esc(err && err.message ? err.message : err) + '</div>');
+  if (el) el.insertAdjacentHTML('afterbegin', '<div class="error-banner" role="alert">This page could not be shown: ' + esc(err && err.message ? err.message : err) + '</div>');
 }
 function go(hash) {
   const h = hash.charAt(0) === '#' ? hash : '#/' + hash.replace(/^\/+/, '');
@@ -383,7 +478,7 @@ function loadAll(paths) { return Promise.all(paths.map(load)); }
 /* Forget cached payloads so the next load fetches them again (live refresh). */
 function uncache(paths) { (Array.isArray(paths) ? paths : [paths]).forEach(p0 => { const p = String(p0).replace(/^\/+/, '').replace(/^data\//, ''); delete CACHE[p]; }); }
 /* Re-fetch index.json (fresh live cards), then resolve with it. */
-function refreshIndex() { uncache('index.json'); return load('index.json').then(d => { if (d) INDEX.data = d; return INDEX.data; }); }
+function refreshIndex() { uncache('index.json'); return load('index.json').then(d => { if (d) INDEX.data = d; if (SHELL) SHELL.setLive({ baseball: liveAny() }); return INDEX.data; }); }
 /* Every ms while the page is shown and visible: forget `paths`, refresh index.json, re-render the page. */
 function liveRefresh(paths, ms) {
   interval(() => {
@@ -407,6 +502,8 @@ function playerPath(pid) { return 'players/' + pid + '.json'; }
 function loadLevel(file, L) { return load(lpath(file, L)); }
 function loadYear(file, L, S) { return load(ypath(file, L, S)); }
 /* A game payload: the season given (or the current one), then the season before (game pages are kept for two). */
+/* mlb/<S>/markets.json is built for the current season only: older seasons read nothing (index.json, already cached). */
+function marketsPath(S) { return Number(S) === currentSeason('mlb') ? ypath('markets.json', 'mlb', S) : 'index.json'; }
 function loadGame(gpk, L, S) {
   const l = isLevel(L) ? L : state.level;
   const s = Number(S || state.season || currentSeason(l));
@@ -659,7 +756,7 @@ function basesOf(b) {
 /* A small diamond (SVG) with the runners on, and the outs as dots when given. */
 function basesHTML(b, outs) {
   const on = basesOf(b);
-  const sq = (cx, cy, f) => '<rect x="' + (cx - 3.5) + '" y="' + (cy - 3.5) + '" width="7" height="7" transform="rotate(45 ' + cx + ' ' + cy + ')" fill="' + (f ? C.clay : 'none') + '" stroke="' + (f ? C.clay : C.text3) + '" stroke-width="1.2"/>';
+  const sq = (cx, cy, f) => '<rect x="' + (cx - 3.5) + '" y="' + (cy - 3.5) + '" width="7" height="7" transform="rotate(45 ' + cx + ' ' + cy + ')" style="fill:' + (f ? 'var(--accent)' : 'none') + ';stroke:' + (f ? 'var(--accent)' : 'var(--ink-3)') + '" stroke-width="1.2"/>';
   let h = '<svg class="bases" width="32" height="22" viewBox="0 0 32 22" aria-label="' + esc(baseOutText(b, outs)) + '">' + sq(25, 14, on[0]) + sq(16, 6, on[1]) + sq(7, 14, on[2]) + '</svg>';
   if (isNum(outs)) h += '<span class="outs-dots">' + [0, 1, 2].map(i => '<i class="' + (i < outs ? 'on' : '') + '"></i>').join('') + '</span>';
   return '<span class="bases-wrap">' + h + '</span>';
@@ -802,10 +899,17 @@ function teamColour(tid) {
   const x = TEAMS[String(tid)] || {};
   const rgb = hexRGB(x.colour);
   if (!rgb) return x.placeholder ? C.text3 : PALETTE[hashIndex(tid || '?', PALETTE.length)];
+  if (window.QK) return QK.color.team(x.colour);
   let c = rgb.slice(), k = 0;
   while (lum(c) < 0.32 && k < 12) { c = c.map(v => Math.round(v + (255 - v) * 0.14)); k++; }
   return '#' + c.map(v => v.toString(16).padStart(2, '0')).join('');
 }
+/* The kit's team mark (a contrast-checked monogram in the club colour; no logos). */
+function teamMark(tid, size) {
+  const x = TEAMS[String(tid)] || {};
+  return window.QK ? QK.teamMark({ name: x.name || String(tid), abbr: x.abbr || teamAbbr(tid), colour: x.colour }, size) : teamBar(tid);
+}
+function teamObj(tid, L, S) { const x = TEAMS[String(tid)] || {}; return { name: x.short || x.name || String(tid), abbr: x.abbr || teamAbbr(tid), colour: x.colour, href: teamHref(tid, L, S) }; }
 /* The raw club colour (for fills behind white text). */
 function teamColourRaw(tid) { const x = TEAMS[String(tid)] || {}; return x.colour || C.bg3; }
 function teamBar(tid) { return '<span class="team-bar" style="background:' + teamColour(tid) + '"></span>'; }
@@ -843,9 +947,10 @@ function parkLink(vid, name) {
 function compareHref(a, b) { return '#/compare' + (a ? '/' + encodeURIComponent(a) : '') + (b ? '/' + encodeURIComponent(b) : ''); }
 function glossHref(key) { return '#/glossary' + (key ? '/' + encodeURIComponent(key) : ''); }
 
-/* A GAME_CARD tile (index.json today/recent/upcoming, schedule.json). The tile links to the game centre.
- * Lines: model (home win %, total, run line), market (de-vigged home win %, sources), the ESPN/DraftKings line, live WP.
- * opts {level, season, date: true (date instead of time), compact, series: true (default)}. */
+/* A GAME_CARD as the kit's game card (index.json today/recent/upcoming, schedule.json), linking to the game centre:
+ * the two clubs with the model's (or, live, the in-game) win probability, the probable starters, the score, the
+ * probability bar, the model-v-market strip before the first pitch, and a line with the model total, the DraftKings
+ * line and the edge. opts {level, season, date: true (show the date), compact, series: true (default)}. */
 function gameCard(g, opts) {
   const o = opts || {};
   const L = o.level || state.level;
@@ -858,41 +963,49 @@ function gameCard(g, opts) {
   const pShow = live && isNum(g.wp_home) ? Number(g.wp_home) : pH;
   const winH = fin && hs !== null && as !== null && hs > as, winA = fin && hs !== null && as !== null && as > hs;
   const prob = (g.probables || {});
-  const row = (tid, score, p, win, lose, side) =>
-    '<div class="gc-team' + (win ? ' gc-win' : '') + (lose ? ' gc-lose' : '') + '">' + teamBar(tid) +
-    '<span class="gc-name"><span class="gc-abbr">' + esc(teamAbbr(tid)) + '</span> <span class="gc-full">' + esc(teamShort(tid)) + '</span>' +
-    (st === 'pre' && prob[side] ? '<span class="gc-sp" title="Probable starter">' + esc(playerSurname(prob[side])) + '</span>' : '') + '</span>' +
-    (st === 'pre' || score === null ? '' : '<span class="gc-score">' + esc(score) + '</span>') +
-    '<span class="gc-p" title="' + (live && isNum(g.wp_home) ? 'Live' : 'Model pre-game') + ' ' + (side === 'home' ? 'home' : 'away') + ' win probability">' + (p === null ? '' : pct(p, 0)) + '</span></div>';
-  let top = statusChip(g);
-  if (o.date) top = '<span class="gc-date">' + esc(fmtDate(g.date, { year: false })) + '</span> ' + top;
+  const row = (tid, score, p, lost, side) =>
+    '<div class="qk-match-row' + (lost ? ' lost' : '') + '">' + teamMark(tid, 'sm') +
+    '<span class="nm">' + esc(teamShort(tid)) + (st === 'pre' && prob[side] ? ' <small class="bp-sp" title="Probable starter">' + esc(playerSurname(prob[side])) + '</small>' : '') + '</span>' +
+    '<span class="p" title="' + (live && isNum(g.wp_home) ? 'Live' : 'Model pre-game') + ' win probability">' + (p === null || fin ? '' : pct(p, 0)) + '</span>' +
+    '<span class="sc">' + (st === 'pre' || score === null ? '' : esc(score)) + '</span></div>';
+  let badge;
+  if (live) badge = '<span class="qk-badge live">' + esc(isNum(g.inning) ? inningLabel(g.inning, g.half, true) : 'Live') + '</span>';
+  else if (fin) { const n = g.innings && g.innings.length ? g.innings.length : (isNum(g.inning) ? g.inning : 9); badge = '<span class="qk-badge final">Final' + (n > 9 || (n < 9 && n >= 5) ? '/' + n : '') + '</span>'; }
+  else if (st === 'pre') badge = '<span class="qk-badge">' + esc((o.date ? fmtDate(g.date, { year: false, weekday: false }) + ' ' : '') + (fmtTime(g.start || g.date) || 'TBD')) + '</span>';
+  else badge = '<span class="qk-badge warn">' + esc(titleCase(st)) + '</span>';
   const tag = o.series === false ? '' : (g.series ? seriesText(g.series, true) : (g.gtype && g.gtype !== 'R' ? roundLabel(g.gtype) : ''));
-  const lines = [];
-  if (pH !== null || isNum(m.total)) {
-    lines.push('<span class="gc-l"><b>Model</b> ' + (pH !== null ? esc(teamAbbr(pH >= 0.5 ? g.home : g.away)) + ' ' + pct(Math.max(pH, 1 - pH), 0) : '') +
-      (isNum(m.total) ? ' · ' + num(m.total, 1) + ' runs' : '') + (isNum(m.rl_home) ? ' · ' + esc(teamAbbr(g.home)) + ' -1.5 ' + pct(m.rl_home, 0) : '') + '</span>');
-  }
-  if (mk && isNum(mk.p_home)) {
-    const fav = (pH !== null ? pH : mk.p_home) >= 0.5 ? 'home' : 'away';
-    const mp = fav === 'home' ? mk.p_home : 1 - mk.p_home, mm = pH === null ? null : (fav === 'home' ? pH : 1 - pH);
-    lines.push('<span class="gc-l"><b>Market</b> ' + esc(teamAbbr(g[fav])) + ' ' + pct(mp, 0) + (mm !== null ? ' (' + edgeHTML(mm, mp, 0) + ')' : '') +
-      (mk.sources && mk.sources.length ? ' <span class="src-chip">' + esc(mk.sources.join(' · ')) + '</span>' : '') + '</span>');
-  }
+  const lg = [o.date && st !== 'pre' ? fmtDate(g.date, { year: false }) : '', tag || (L === 'aaa' ? 'Triple-A' : 'MLB')].filter(Boolean).join(' · ');
+  const away = teamObj(g.away, L), home = teamObj(g.home, L);
+  const bar = !fin && pShow !== null && window.QK ? QK.probBar(1 - pShow, null, pShow, away, home) : '';
+  const mvm = st === 'pre' && mk && isNum(mk.p_home) && pH !== null && window.QK ? QK.mvm(pH, Number(mk.p_home), teamAbbr(g.home) + ' win') : '';
+  const bits = [];
+  if (isNum(m.total)) bits.push('<span title="Model expected total runs">' + num(m.total, 1) + ' runs</span>');
   if (ln && (ln.ml || ln.total)) {
     const ml = Array.isArray(ln.ml) ? ln.ml : null;
     const tot = ln.total && typeof ln.total === 'object' ? ln.total.line : ln.total;
-    lines.push('<span class="gc-l"><b>' + esc(ln.src || 'Line') + '</b> ' + (ml ? esc(teamAbbr(g.home)) + ' ' + fmtOdds(ml[0]) + ' / ' + esc(teamAbbr(g.away)) + ' ' + fmtOdds(ml[1]) : '') +
-      (isNum(tot) ? ' · O/U ' + num(tot, 1) : '') + '</span>');
+    bits.push('<span title="' + esc(ln.src || 'Line') + '">' + esc(ln.src === 'ESPN' || !ln.src ? 'DK' : ln.src) + ' ' + (ml ? esc(teamAbbr(g.home)) + ' ' + fmtOdds(ml[0]) : '') + (isNum(tot) ? ' · O/U ' + num(tot, 1) : '') + '</span>');
   }
-  if (live && isNum(g.wp_home)) {
-    const fav = g.wp_home >= 0.5 ? g.home : g.away;
-    lines.push('<span class="gc-l gc-wp"><b>Live</b> ' + esc(teamAbbr(fav)) + ' ' + pct(Math.max(g.wp_home, 1 - g.wp_home), 0) + ' to win' +
-      (isNum(g.outs) ? ' · ' + esc(outsText(g.outs)) : '') + '</span>');
+  if (live && isNum(g.outs)) bits.push('<span>' + esc(outsText(g.outs)) + '</span>');
+  let edge = '';
+  if (st === 'pre' && mk && isNum(mk.p_home) && pH !== null && Math.abs(pH - mk.p_home) >= 0.05) {
+    const side = pH > mk.p_home ? g.home : g.away, gap = Math.abs(pH - mk.p_home);
+    edge = '<span class="qk-badge edge" data-tip="The model gives ' + esc(teamShort(side)) + ' ' + Math.round(gap * 100) + ' points more than the de-vigged market' + (mk.sources ? ' (' + esc(mk.sources.join(', ')) + ')' : '') + '">Edge ' + esc(teamAbbr(side)) + ' +' + Math.round(gap * 100) + '</span>';
   }
-  return '<a class="gc' + (live ? ' gc-live' : '') + (o.compact ? ' gc-compact' : '') + '" href="' + gameHref(g.gpk || g.id, L, o.season) + '">' +
-    '<div class="gc-top">' + top + (tag ? '<span class="gc-tag">' + esc(tag) + '</span>' : '') + '</div>' +
-    row(g.away, as, pShow === null ? null : 1 - pShow, winA, winH, 'away') + row(g.home, hs, pShow, winH, winA, 'home') +
-    (lines.length ? '<div class="gc-lines">' + lines.join('') + '</div>' : '') + '</a>';
+  const foot = bits.length || edge ? '<div class="qk-match-foot"><span class="bp-gc-bits">' + bits.join('') + '</span>' + edge + '</div>' : '';
+  return '<a class="qk-match bp-gc' + (live ? ' is-live' : '') + (o.compact ? ' gc-compact' : '') + '" href="' + gameHref(g.gpk || g.id, L, o.season) + '" style="--sa:var(--a-baseball)">' +
+    '<div class="qk-match-top"><span class="lg">' + esc(lg) + '</span>' + badge + '</div>' +
+    '<div class="qk-match-teams">' + row(g.away, as, pShow === null ? null : 1 - pShow, winH, 'away') + row(g.home, hs, pShow, winA, 'home') + '</div>' +
+    (bar || mvm ? '<div class="qk-stack" style="--g:6px">' + bar + (mvm ? '<div style="margin-top:6px">' + mvm + '</div>' : '') + '</div>' : '') + foot + '</a>';
+}
+/* A GAME_CARD in the kit's shared game shape (QK.matchCard, QK.tick). */
+function kitGame(g, L) {
+  const st = gameState(g), m = g.model || {}, mk = g.market || {};
+  const live = st === 'live';
+  return { sport: 'baseball', league: g.series ? seriesText(g.series, true) : (L === 'aaa' ? 'Triple-A' : 'MLB'), id: g.gpk, start: g.start || g.date,
+    status: st === 'live' ? 'live' : st === 'final' ? 'final' : 'pre', home: teamObj(g.home, L), away: teamObj(g.away, L),
+    hs: isNum(g.hs) ? g.hs : null, as: isNum(g.as) ? g.as : null,
+    p_home: live && isNum(g.wp_home) ? g.wp_home : (isNum(m.p_home) ? m.p_home : null), market_home: isNum(mk.p_home) ? mk.p_home : null,
+    period: isNum(g.inning) ? g.inning : null, href: gameHref(g.gpk, L) };
 }
 /* A market TITLE dict -> {id: p} (de-vigged "probs", else "prices", else the raw "mid"); {} when unavailable. */
 function titleProbs(t) {
@@ -930,10 +1043,11 @@ function phase(L) {
 
 // ── HTML builders ──────────────────────────────────────────────────────────
 
+/* A kit card: title and subtitle over the body (bodies keep their own padding classes: .pad, tables flush). */
 function card(title, sub, bodyHtml, id) {
-  return '<div class="card"' + (id ? ' id="' + esc(id) + '"' : '') + '>' +
-    (title ? '<div class="card-header">' + esc(title) + (sub ? ' <span class="card-sub">' + sub + '</span>' : '') + '</div>' : '') +
-    (bodyHtml || '') + '</div>';
+  return '<section class="qk-card card"' + (id ? ' id="' + esc(id) + '"' : '') + '>' +
+    (title ? '<div class="qk-card-head card-header"><div><div class="qk-card-title">' + esc(title) + '</div>' + (sub ? '<div class="qk-card-sub card-sub">' + sub + '</div>' : '') + '</div></div>' : '') +
+    '<div class="card-main">' + (bodyHtml || '') + '</div></section>';
 }
 function muted(text) { return '<div class="muted">' + text + '</div>'; }
 function chip(text, cls) { return '<span class="chip' + (cls ? ' ' + cls : '') + '">' + esc(text) + '</span>'; }
@@ -943,7 +1057,7 @@ function notBuilt(what, d) { return muted(esc(what) + ' is not available yet' + 
  * a cell is {v, html, cls, align, title, style} or a primitive. opts {compact, sticky, cls, id}. */
 function tableHTML(cols, rows, opts) {
   const o = opts || {};
-  let h = '<div class="table-wrap' + (o.compact ? ' compact' : '') + '"' + (o.id ? ' id="' + esc(o.id) + '"' : '') + '><table class="wc-table' + (o.sticky ? ' sticky-head' : '') + (o.cls ? ' ' + o.cls : '') + '"><thead><tr>';
+  let h = '<div class="table-wrap qk-table-wrap' + (o.compact ? ' compact' : '') + '"' + (o.id ? ' id="' + esc(o.id) + '"' : '') + '><table class="qk-table wc-table' + (o.compact ? ' dense' : '') + (o.sticky ? ' sticky-head' : '') + (o.cls ? ' ' + o.cls : '') + '"><thead><tr>';
   cols.forEach(c => {
     const cc = typeof c === 'string' ? { label: c } : c;
     h += '<th class="' + (cc.sortable === false ? '' : 'sortable-th') + (cc.cls ? ' ' + cc.cls : '') + '"' +
@@ -984,6 +1098,7 @@ function sortable(el) {
         const asc = th.dataset.sortDir !== 'asc';
         ths.forEach(x => { delete x.dataset.sortDir; });
         th.dataset.sortDir = asc ? 'asc' : 'desc';
+        ths.forEach(x => { if (x.classList.contains('sortable-th')) x.setAttribute('aria-sort', x === th ? (asc ? 'ascending' : 'descending') : 'none'); });
         rows.sort((a, b) => {
           const av = a.children[idx] ? a.children[idx].dataset.v : '';
           const bv = b.children[idx] ? b.children[idx].dataset.v : '';
@@ -1003,17 +1118,21 @@ function sortable(el) {
   });
 }
 function lerp(a, b, t) { return a + (b - a) * t; }
-/* Savant-style: blue at the bottom, grey in the middle, red at the top (p is 0-100). */
+/* Percentiles on the kit's diverging scale, the same on every site: red (poor) through the neutral to blue (great); p is 0-100. */
+function tokenOf(n, dflt) { const v = window.QK ? QK.cssVar(n) : ''; return v || dflt; }
 function pctColor(p) {
-  if (!isNum(p)) return '#30363d';
+  if (!isNum(p)) return 'var(--s-3)';
   const t = Math.max(0, Math.min(100, p)) / 100;
-  const from = t < 0.5 ? C.pctLow : C.pctMid, to = t < 0.5 ? C.pctMid : C.pctHigh;
-  const u = t < 0.5 ? t * 2 : (t - 0.5) * 2;
-  return 'rgb(' + Math.round(lerp(from[0], to[0], u)) + ',' + Math.round(lerp(from[1], to[1], u)) + ',' + Math.round(lerp(from[2], to[2], u)) + ')';
+  const neg = tokenOf('--div-neg', '#e66767'), mid = tokenOf('--div-mid', '#383835'), pos = tokenOf('--div-pos', '#3987e5');
+  if (!window.QK) return t < 0.5 ? neg : pos;
+  /* the neutral band is narrow so mid-table players still read as a colour */
+  return t < 0.5 ? QK.color.mix(neg, mid, Math.min(1, t / 0.5) * 0.88) : QK.color.mix(mid, pos, 0.12 + Math.min(1, (t - 0.5) / 0.5) * 0.88);
 }
+/* Ink for text on a percentile colour. */
+function pctInk(p) { if (!isNum(p) || !window.QK) return 'var(--ink-1)'; const c = pctColor(p); return QK.color.parse(c) ? QK.color.ink(c) : '#fff'; }
 function pctPill(p) {
   if (!isNum(p)) return '<span class="pct-pill empty">—</span>';
-  return '<span class="pct-pill" style="background:' + pctColor(p) + '">' + Math.round(p) + '</span>';
+  return '<span class="pct-pill" style="background:' + pctColor(p) + ';color:' + pctInk(p) + '">' + Math.round(p) + '</span>';
 }
 function pctRow(label, p, valueText, title) {
   const known = isNum(p);
@@ -1022,19 +1141,20 @@ function pctRow(label, p, valueText, title) {
     '<span class="pct-label">' + esc(label) + '</span>' +
     '<div class="pct-bar">' + (known
       ? '<div class="pct-fill" style="width:' + x + '%;background:' + pctColor(p) + '"></div>' +
-        '<span class="pct-dot" style="left:' + x + '%;background:' + pctColor(p) + '">' + Math.round(p) + '</span>'
+        '<span class="pct-dot" style="left:' + x + '%;background:' + pctColor(p) + ';color:' + pctInk(p) + '">' + Math.round(p) + '</span>'
       : '<span class="pct-none">not enough data</span>') +
     '</div><span class="pct-val">' + (valueText === undefined ? '' : valueText) + '</span></div>';
 }
+/* A kit KPI tile; value and sub are HTML. */
 function statTile(label, value, sub, cls) {
-  return '<div class="kpi' + (cls ? ' ' + cls : '') + '"><div class="kpi-label">' + esc(label) + '</div>' +
-    '<div class="kpi-value">' + (value === undefined || value === null ? '—' : value) + '</div>' + (sub ? '<div class="kpi-sub">' + sub + '</div>' : '') + '</div>';
+  return '<div class="qk-kpi kpi' + (cls ? ' ' + cls : '') + '"><div class="qk-kpi-label kpi-label">' + esc(label) + '</div>' +
+    '<div class="qk-kpi-value kpi-value">' + (value === undefined || value === null ? '—' : value) + '</div>' + (sub ? '<div class="qk-kpi-sub kpi-sub">' + sub + '</div>' : '') + '</div>';
 }
 /* A probability with an inline bar (0-1); colour optional; max scales the bar. */
 function probCell(p, colour, max) {
   if (!isNum(p)) return '<span class="muted-inline">—</span>';
   const w = Math.max(0, Math.min(1, p / (max || 1))) * 100;
-  return '<span class="pcell"><span class="pcell-bar"><span style="width:' + w.toFixed(1) + '%;background:' + (colour || C.clay) + '"></span></span><span class="pcell-v">' + pct(p) + '</span></span>';
+  return '<span class="pcell"><span class="pcell-bar"><span style="width:' + w.toFixed(1) + '%;background:' + (colour || 'var(--c-1)') + '"></span></span><span class="pcell-v">' + pct(p) + '</span></span>';
 }
 /* Model minus market in percentage points, coloured (green = model higher). */
 function edgeHTML(model, market, d) {
@@ -1066,18 +1186,18 @@ function seqColour(t) {
 }
 function toggles(items, active, attr) {
   const a = attr || 'data-k';
-  return items.map(it => '<button type="button" class="tbtn' + (String(it.key) === String(active) ? ' active' : '') + '" ' + a + '="' + esc(it.key) + '">' + esc(it.label) + '</button>').join('');
+  return items.map(it => { const on = String(it.key) === String(active); return '<button type="button" class="tbtn' + (on ? ' active' : '') + '" aria-pressed="' + on + '" ' + a + '="' + esc(it.key) + '">' + esc(it.label) + '</button>'; }).join('');
 }
 function wireToggles(root, attr, fn) {
   if (!root) return;
   const a = attr || 'data-k';
   root.querySelectorAll('[' + a + ']').forEach(b => b.addEventListener('click', () => {
-    root.querySelectorAll('[' + a + ']').forEach(x => x.classList.toggle('active', x === b));
+    root.querySelectorAll('[' + a + ']').forEach(x => { x.classList.toggle('active', x === b); x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
     fn(b.getAttribute(a));
   }));
 }
 function pageHead(title, sub, right) {
-  return '<div class="page-head"><div><h2>' + esc(title) + '</h2>' + (sub ? '<div class="ph-sub muted-inline">' + sub + '</div>' : '') + '</div>' +
+  return '<div class="page-head"><div><h2>' + esc(title) + '</h2>' + (sub ? '<div class="ph-sub">' + sub + '</div>' : '') + '</div>' +
     (right ? '<div class="ph-nav">' + right + '</div>' : '') + '</div>';
 }
 
@@ -1149,6 +1269,13 @@ function setSeason(S) {
   go(base + (qs ? '?' + qs : ''));
 }
 let pickerFilled = false;
+let SHELL = null;
+/* The level switch and season picker sit at the right of the section nav (the shell's ctx slot). */
+function ctxHTML() {
+  return '<div class="qk-seg bp-level" role="group" aria-label="Level">' + LEVELS.map(l =>
+    '<button type="button" data-level="' + l + '" aria-pressed="' + (l === state.level) + '" title="' + esc(LEVEL_LONG[l]) + '">' + esc(LEVEL_NAME[l]) + '</button>').join('') + '</div>' +
+    '<select class="qk-select bp-season" id="season-select" aria-label="Season"></select>';
+}
 function fillSeasonPicker() {
   const sel = document.getElementById('season-select');
   if (!sel) return;
@@ -1159,124 +1286,81 @@ function fillSeasonPicker() {
   sel.value = String(state.season || currentSeason(L));
   pickerFilled = true;
 }
+/* Section hrefs follow the level and season shown. */
+function sectionHrefs(L, S) {
+  return { overview: '#/' + L + sq(L, S), fixtures: href('games', L, S), standings: href('standings', L, S), teams: href('teams', L, S),
+    players: href('hitters', L, S), value: href('value', L, S), fantasy: '#/mlb/fantasy', lab: href('lab', L, S), model: '#/methodology' };
+}
 function updateHeader() {
   const L = state.level, S = state.season;
   if (document.body) { LEVELS.forEach(l => document.body.classList.toggle('lv-' + l, l === L)); }
-  document.querySelectorAll('.lg-btn[data-level]').forEach(b => {
-    b.classList.toggle('active', b.dataset.level === L);
-    b.setAttribute('aria-pressed', b.dataset.level === L ? 'true' : 'false');
-  });
-  const links = { hub: '#/' + L + sq(L, S), games: href('games', L, S), standings: href('standings', L, S), postseason: ghref('postseason', S),
-    hitters: href('hitters', L, S), pitchers: href('pitchers', L, S), teams: href('teams', L, S), leaders: href('leaders', L, S),
-    umpires: ghref('umpires', S), parks: ghref('parks', S), prospects: '#/prospects', history: '#/history', awards: ghref('awards', S),
-    lab: href('lab', L, S), compare: '#/compare', value: href('value', L, S), trade: href('trade', L === 'aaa' ? 'mlb' : L, L === 'aaa' ? null : S), moves: '#/mlb/moves', fantasy: '#/mlb/fantasy', markets: '#/markets', calibration: '#/calibration', glossary: '#/glossary', methodology: '#/methodology' };
-  document.querySelectorAll('.global-nav a[data-nav]').forEach(a => { if (links[a.dataset.nav]) a.setAttribute('href', links[a.dataset.nav]); });
-  const t = document.querySelector('.site-title a');
-  if (t) t.setAttribute('href', '#/' + L);
-  const input = document.getElementById('search-input');
-  if (input) input.placeholder = 'Search players and teams…';
+  document.querySelectorAll('.bp-level button[data-level]').forEach(b => b.setAttribute('aria-pressed', b.dataset.level === L ? 'true' : 'false'));
+  const links = sectionHrefs(L, S);
+  document.querySelectorAll('.qk-secnav a[data-sec]').forEach(a => { if (links[a.dataset.sec]) a.setAttribute('href', links[a.dataset.sec]); });
+  const brand = document.querySelector('.qk-brand');
+  if (brand && !brand.dataset.home) { brand.dataset.home = '1'; }
 }
-function markNav(key) {
-  document.querySelectorAll('.global-nav a[data-nav]').forEach(a => a.classList.toggle('active', a.dataset.nav === key));
-}
+function markNav(key) { if (SHELL) SHELL.setSection(key); }
 function setMeta(html) {
   const el = document.getElementById('meta-line');
   if (!el) return;
   const d = INDEX.data;
-  const base = [LEVEL_NAME[state.level] + ' ' + (state.season || currentSeason(state.level)),
-    d && d.updated_at ? 'Updated ' + esc(fmtStamp(d.updated_at)) : ''].filter(Boolean).join(' · ');
+  const base = d && d.updated_at ? 'Updated ' + esc(fmtStamp(d.updated_at)) : '';
   el.innerHTML = [html, base].filter(Boolean).join(' · ');
 }
 
-function norm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+function norm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
 let SEARCH = null;
+/* The search palette's rows: every club (MLB and Triple-A) and every player in players_index.json. */
 function loadSearch() {
   if (SEARCH) return SEARCH;
   SEARCH = ensureNames().then(() => {
     const items = [];
     Object.keys(TEAMS).forEach(tid => {
       const x = TEAMS[tid];
-      if (!x.name || x.placeholder) return;
-      const L = x.level === 'aaa' ? 'aaa' : x.level === 'npb' ? 'npb' : 'mlb';
-      items.push({ kind: 'Teams', id: tid, label: x.name, sub: [x.abbr, x.level === 'aaa' ? 'Triple-A' + (x.parent ? ' · ' + teamAbbr(x.parent) : '') : x.level === 'npb' ? 'NPB · ' + (x.jp || '') : x.division].filter(Boolean).join(' · '),
-        href: teamHref(tid, L), colour: teamColour(tid), order: L === 'mlb' ? 0 : 1, norm: norm(x.name + ' ' + (x.abbr || '') + ' ' + (x.short || '') + ' ' + (x.city || '') + ' ' + (x.jp || '')) });
+      if (!x.name || x.placeholder || x.level === 'npb') return;
+      const L = x.level === 'aaa' ? 'aaa' : 'mlb';
+      items.push({ sport: 'baseball', t: x.name, s: [L === 'aaa' ? 'Triple-A club' + (x.parent ? ' · ' + teamAbbr(x.parent) : '') : 'Club · ' + (x.division || 'MLB'), x.abbr].filter(Boolean).join(' · '),
+        href: teamHref(tid, L), order: L === 'mlb' ? 0 : 2 });
     });
     Object.keys(NAMES).forEach(pid => {
       const x = NAMES[pid] || {};
       if (!x.name) return;
       const lv = Array.isArray(x.levels) ? x.levels : (x.levels ? String(x.levels).split(/[,|]/) : []);
+      if (lv.length && lv.every(v => String(v).toLowerCase() === 'npb')) return;
       const L = lv.indexOf('mlb') >= 0 || !lv.length ? 'mlb' : 'aaa';
-      items.push({ kind: 'Players', id: pid, label: x.name, sub: [x.pos, x.team ? teamAbbr(x.team) : '', lv.length ? lv.map(v => String(v).toUpperCase()).join('/') : ''].filter(Boolean).join(' · '),
-        href: playerHref(pid, { level: L }), order: L === 'mlb' ? 0 : 1, norm: norm(x.name + ' ' + (x.short || '')) });
+      items.push({ sport: 'baseball', t: x.name, s: [x.pos ? (isPitcher(pid) ? 'Pitcher' : 'Hitter') + ' · ' + x.pos : 'Player', x.team ? teamAbbr(x.team) : '', lv.length ? lv.filter(v => String(v).toLowerCase() !== 'npb').map(v => String(v).toUpperCase()).join('/') : ''].filter(Boolean).join(' · '),
+        href: playerHref(pid, { level: L }), order: L === 'mlb' ? 1 : 3 });
     });
-    return (LEVELS.indexOf('npb') >= 0 ? load('npb/names.json') : Promise.resolve(null)).then(nd => {
-      // NPB players: [English, Japanese, club, position, last season]
-      const P = (nd && nd.players) || {};
-      Object.keys(P).forEach(pid => {
-        const r = P[pid] || [];
-        if (!r[0]) return;
-        items.push({ kind: 'Players', id: pid, label: r[0], sub: ['NPB', r[1] || '', r[2] ? teamAbbr(r[2]) : '', r[4] ? String(r[4]) : ''].filter(Boolean).join(' · '),
-          href: href('player/' + encodeURIComponent(pid), 'npb'), order: 2, norm: norm(r[0] + ' ' + (r[1] || '')) });
-      });
-      items.sort((a, b) => a.order - b.order);
-      return items;
-    });
+    items.sort((a, b) => a.order - b.order);
+    return items;
   });
   return SEARCH;
 }
-function closeSearch() {
-  const box = document.getElementById('search-results');
-  if (box) { box.innerHTML = ''; box.style.display = 'none'; }
-}
-function runSearch(q) {
-  const box = document.getElementById('search-results');
-  const n = norm(q.trim());
-  if (n.length < 2 || !box) { closeSearch(); return; }
-  loadSearch().then(items => {
-    const words = n.split(/\s+/).filter(Boolean);
-    const hits = items.filter(it => words.every(w => it.norm.indexOf(w) >= 0));
-    // players whose surname starts with the query first
-    hits.sort((a, b) => {
-      const sa = a.norm.split(' ').some(w => w.indexOf(words[0]) === 0) ? 0 : 1, sb = b.norm.split(' ').some(w => w.indexOf(words[0]) === 0) ? 0 : 1;
-      return sa - sb || a.order - b.order;
-    });
-    let html = '';
-    ['Teams', 'Players'].forEach(g => {
-      const list = hits.filter(h => h.kind === g).slice(0, g === 'Players' ? 10 : 4);
-      if (!list.length) return;
-      html += '<div class="sr-head">' + g + '</div>' + list.map(h =>
-        '<a class="sr-item" href="' + esc(h.href) + '">' + (h.colour ? '<span class="team-bar" style="background:' + h.colour + '"></span>' : '') + '<span>' + esc(h.label) + '</span><span class="sr-sub">' + esc(h.sub || '') + '</span></a>').join('');
-    });
-    box.innerHTML = html || '<div class="sr-empty">No player or team matches.</div>';
-    box.style.display = 'block';
-  });
-}
-function initSearch() {
-  const input = document.getElementById('search-input');
-  if (!input) return;
-  let timer = null;
-  input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => runSearch(input.value), 120); });
-  input.addEventListener('focus', () => { loadSearch(); if (input.value.trim().length >= 2) runSearch(input.value); });
-  input.addEventListener('keydown', ev => {
-    if (ev.key === 'Escape') { input.value = ''; closeSearch(); input.blur(); }
-    if (ev.key === 'Enter') { const a = document.querySelector('#search-results a.sr-item'); if (a) { location.hash = a.getAttribute('href'); input.value = ''; closeSearch(); } }
-  });
-  document.addEventListener('click', ev => { if (!ev.target.closest('.search-box')) closeSearch(); });
-  const box = document.getElementById('search-results');
-  if (box) box.addEventListener('click', ev => { if (ev.target.closest('a')) { input.value = ''; closeSearch(); } });
-}
+function closeSearch() { /* the palette closes itself on navigation */ }
 function initHeader() {
   const sel = document.getElementById('season-select');
   if (sel) sel.addEventListener('change', () => setSeason(sel.value));
-  document.querySelectorAll('.lg-btn[data-level]').forEach(b => b.addEventListener('click', () => switchLevel(b.dataset.level)));
+  document.querySelectorAll('.bp-level button[data-level]').forEach(b => b.addEventListener('click', () => switchLevel(b.dataset.level)));
+}
+function liveAny() {
+  const d = INDEX.data || {};
+  const cards = [].concat(d.today || [], ((d.levels || {}).aaa || {}).today || []);
+  return cards.some(isLive);
 }
 function init() {
+  if (window.QK) {
+    SHELL = QK.shell({
+      sport: 'baseball', section: 'overview',
+      sections: QK.sections('baseball').map(s => Object.assign({}, s, { href: s.key === 'overview' ? '#/' : '#/' + s.key })),
+      ctx: ctxHTML(),
+      search: { load: loadSearch }
+    });
+  }
   load('index.json').then(idx => {
     INDEX.data = idx;
     initHeader();
-    initSearch();
-    const ov = document.getElementById('loading-overlay');
-    if (ov) ov.style.display = 'none';
+    if (SHELL) SHELL.setLive({ baseball: liveAny() });
     booted = true;
     window.addEventListener('hashchange', render);
     render();
@@ -1292,7 +1376,7 @@ return {
   switchLevel: switchLevel, setSeason: setSeason, setMeta: setMeta,
   // data
   load: load, loadAll: loadAll, uncache: uncache, refreshIndex: refreshIndex, liveRefresh: liveRefresh, ok: ok, reason: reason, cached: cached, lpath: lpath, ypath: ypath, gamePath: gamePath, playerPath: playerPath,
-  loadLevel: loadLevel, loadYear: loadYear, loadGame: loadGame, ensureNames: ensureNames, playersOf: playersOf,
+  loadLevel: loadLevel, loadYear: loadYear, marketsPath: marketsPath, loadGame: loadGame, ensureNames: ensureNames, playersOf: playersOf,
   index: () => INDEX.data, levelInfo: levelInfo, currentSeason: currentSeason, seasons: seasons, levelName: levelName, levelLong: levelLong,
   isLevel: isLevel, phase: phase,
   NAMES: NAMES, TEAMS: TEAMS, UMPS: UMPS, VENUES: VENUES, DIVISIONS: DIVISIONS,
@@ -1318,7 +1402,8 @@ return {
   // HTML
   card: card, muted: muted, chip: chip, notBuilt: notBuilt, tableHTML: tableHTML, sortable: sortable, pctPill: pctPill, pctColor: pctColor,
   pctRow: pctRow, statTile: statTile, probCell: probCell, edgeHTML: edgeHTML, splitBar: splitBar, divColour: divColour, seqColour: seqColour,
-  toggles: toggles, wireToggles: wireToggles, pageHead: pageHead,
+  toggles: toggles, wireToggles: wireToggles, pageHead: pageHead, pctInk: pctInk, alpha: alpha, teamMark: teamMark, teamObj: teamObj, kitGame: kitGame,
+  SECTION_OF: SECTION_OF, SECTION_TABS: SECTION_TABS, shell: () => SHELL, liveAny: liveAny,
   // charts
   plot: plot, layout: layout, PALETTE: PALETTE, C: C, DARK_LAYOUT: DARK_LAYOUT, PLOTLY_CONF: PLOTLY_CONF,
   FOOTBALL_URL: FOOTBALL_URL, PADDOCK_URL: PADDOCK_URL, HARDWOOD_URL: HARDWOOD_URL, ACE_URL: ACE_URL, GRIDIRON_URL: GRIDIRON_URL, RINK_URL: RINK_URL,

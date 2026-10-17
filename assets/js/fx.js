@@ -46,12 +46,12 @@ FX.mean = a => { const s = a.filter(isNum).map(Number); return s.length ? s.redu
 FX.sd = a => { const s = a.filter(isNum).map(Number); if (s.length < 2) return null; const m = FX.mean(s); return Math.sqrt(s.reduce((x, y) => x + (y - m) * (y - m), 0) / (s.length - 1)); };
 FX.alpha = (hex, a) => {
   const h = String(hex || '').replace('#', '');
-  if (h.length !== 6) return 'rgba(217,128,78,' + a + ')';
+  if (h.length !== 6) return BP.alpha ? BP.alpha(hex || 'var(--c-1)', a) : 'rgba(217,128,78,' + a + ')';
   return 'rgba(' + parseInt(h.slice(0, 2), 16) + ',' + parseInt(h.slice(2, 4), 16) + ',' + parseInt(h.slice(4, 6), 16) + ',' + a + ')';
 };
 FX.C = BP.C;
 FX.PALETTE = BP.PALETTE;
-FX.CA = BP.C.p1; FX.CB = BP.C.p2;     // player A (clay) / player B (blue)
+FX.CA = BP.C.p1; FX.CB = BP.C.p2;     // player A (chart slot 1) / player B (slot 2)
 
 /* Normalise a table-ish payload to an array of row objects:
  * [{...}], {cols, rows}, {fields, rows}, {key: {...}} (key kept as _key), or pandas-style {col: {i: v}}. */

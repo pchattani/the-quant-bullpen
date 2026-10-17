@@ -395,7 +395,7 @@ function sliderCard(ctx, cat, p, kind) {
   const metrics = (cat && cat.metrics) || [];
   if (!p) return k.card('Percentiles', '', k.muted('Not in the ' + k.LN(ctx.L) + ' ' + ctx.S + ' ' + (kind === 'pit' ? 'pitcher' : 'hitter') + ' catalogue.'));
   const roleLbl = kind === 'pit' ? (k.roleOf(p) === 'RP' ? 'relievers' : k.roleOf(p) === 'SP' ? 'starters' : 'role') : (p.pos ? p.pos + 's' : 'position');
-  return '<div class="card"><div class="card-header">Percentile rankings <span class="card-sub">All ' + metrics.length + ' catalogue metrics, ' + k.LN(ctx.L) + ' ' + ctx.S + ', ' + k.int(k.sampleOf(p, kind === 'pit' ? 'pitcher' : 'hitter')) + (kind === 'pit' ? ' batters faced' : ' PA') + '. Red is good, blue is poor; lower-is-better metrics are flipped.' +
+  return '<div class="card"><div class="card-header">Percentile rankings <span class="card-sub">All ' + metrics.length + ' catalogue metrics, ' + k.LN(ctx.L) + ' ' + ctx.S + ', ' + k.int(k.sampleOf(p, kind === 'pit' ? 'pitcher' : 'hitter')) + (kind === 'pit' ? ' batters faced' : ' PA') + '. Blue is good, red is poor (the same scale on every Quant site); lower-is-better metrics are flipped.' +
     (p.qualified === false ? ' <strong>Below the sample floor: percentiles are provisional or missing.</strong>' : '') + '</span>' +
     '<span class="gq-ctl">' + k.toggle('pp-basis', [['all', 'v ' + k.LN(ctx.L)], ['role', 'v ' + roleLbl]], VIEW.basis) + '</span></div><div id="pp-sl" class="gq-pad"></div></div>';
 }
