@@ -1,1 +1,1 @@
-{"ok":false,"reason":"umpire model: no pitch table for hia 2026","level":"hia","season":2026}
+{"ok":false,"reason":"umpire model: umpire needs tracked pitch locations or batted-ball data, which most High-A parks do not have","level":"hia","season":2026}
