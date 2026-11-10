@@ -1,0 +1,43 @@
+# Publishes this site to GitHub Pages on every push (the hourly deploys from pchattani/quant-sports).
+# Replaces GitHub's built-in "pages build and deployment", whose deploy step gives up after 10 minutes on a site of
+# tens of thousands of files and failed several times a day (November 2026). This one waits up to 30 minutes and
+# tries a second time before reporting a failure. Never edited by the deploys (scripts/ci_site.py leaves .github).
+name: Publish
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 80
+    environment:
+      name: github-pages
+      url: ${{ steps.second.outputs.page_url || steps.first.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: first
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+        with:
+          timeout: 1800000
+      - id: second
+        if: steps.first.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+        with:
+          timeout: 1800000
