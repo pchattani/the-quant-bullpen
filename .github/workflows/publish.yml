@@ -36,6 +36,9 @@ jobs:
         continue-on-error: true
         with:
           timeout: 1800000
+      - name: Pause before the second try (lets a deployment still in progress finish)
+        if: steps.first.outcome == 'failure'
+        run: sleep 150
       - id: second
         if: steps.first.outcome == 'failure'
         uses: actions/deploy-pages@v4
