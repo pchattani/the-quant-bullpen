@@ -1,7 +1,11 @@
 # Publishes this site to GitHub Pages on every push (the hourly deploys from pchattani/quant-sports).
-# Replaces GitHub's built-in "pages build and deployment", whose deploy step gives up after 10 minutes on a site of
-# tens of thousands of files and failed several times a day (November 2026). This one waits up to 30 minutes and
-# tries a second time before reporting a failure. Never edited by the deploys (scripts/ci_site.py leaves .github).
+# Replaces GitHub's built-in "pages build and deployment", whose deploy step gives up after 10 minutes.
+# actions/deploy-pages has the same 10-minute ceiling (it caps any longer timeout) and cancels the deployment when it
+# hits it; on 10 Nov 2026 GitHub Pages sat in "syncing_files" for over 10 minutes even on a 67 MB site, so every
+# such run failed and cancelled a deploy that would have finished. This workflow creates the Pages deployment itself
+# through the REST API, waits up to 45 minutes, and never cancels: a deployment GitHub reports as failed fails the run;
+# one still processing at 45 minutes is left to finish (the live site keeps its previous version meanwhile and the next
+# hourly push deploys again) and the run ends with a warning. Never edited by the deploys (ci_site.py leaves .github).
 name: Publish
 
 on:
@@ -21,26 +25,62 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-24.04
-    timeout-minutes: 80
+    timeout-minutes: 75
     environment:
       name: github-pages
-      url: ${{ steps.second.outputs.page_url || steps.first.outputs.page_url }}
+      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - id: upload
+        uses: actions/upload-pages-artifact@v3
         with:
           path: .
-      - id: first
-        uses: actions/deploy-pages@v4
-        continue-on-error: true
+      - id: deploy
+        name: Deploy to GitHub Pages (waits up to 45 minutes, never cancels)
+        uses: actions/github-script@v7
+        env:
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact_id }}
         with:
-          timeout: 1800000
-      - name: Pause before the second try (lets a deployment still in progress finish)
-        if: steps.first.outcome == 'failure'
-        run: sleep 150
-      - id: second
-        if: steps.first.outcome == 'failure'
-        uses: actions/deploy-pages@v4
-        with:
-          timeout: 1800000
+          script: |
+            const { owner, repo } = context.repo;
+            const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+            const FAILED = ['deployment_failed', 'deployment_content_failed', 'deployment_cancelled',
+                            'deployment_lost', 'deployment_perms_error', 'deployment_attempt_error'];
+            let dep = null;
+            for (let attempt = 1; attempt <= 8 && !dep; attempt++) {
+              try {
+                const oidc = await core.getIDToken();
+                dep = (await github.request('POST /repos/{owner}/{repo}/pages/deployments', {
+                  owner, repo, artifact_id: Number(process.env.ARTIFACT_ID),
+                  pages_build_version: context.sha, oidc_token: oidc })).data;
+              } catch (e) {
+                core.info(`Creating the deployment, attempt ${attempt}: ${e.status} ${e.message}`);
+                if (attempt === 8) throw e;
+                await sleep(60000);
+              }
+            }
+            core.info(`Created deployment ${dep.id}`);
+            core.setOutput('page_url', dep.page_url || '');
+            const deadline = Date.now() + 45 * 60000;
+            let last = null;
+            while (Date.now() < deadline) {
+              await sleep(15000);
+              let status = '';
+              try {
+                status = (await github.request('GET /repos/{owner}/{repo}/pages/deployments/{id}',
+                  { owner, repo, id: dep.id })).data.status || '';
+              } catch (e) {
+                core.info(`Status read failed (${e.status}); trying again`);
+                continue;
+              }
+              if (status !== last) {
+                core.info(`${new Date().toISOString()} status: ${status || '(none reported)'}`);
+                last = status;
+              }
+              if (status === 'succeed') { core.info('Deployed.'); return; }
+              if (FAILED.includes(status)) { core.setFailed(`GitHub Pages reported ${status}`); return; }
+            }
+            core.warning('GitHub Pages was still processing after 45 minutes (last status: ' + (last || 'none') +
+              '). The deployment is left to finish, not cancelled; the live site keeps its previous version until ' +
+              'it does, and the next hourly push deploys again.');
